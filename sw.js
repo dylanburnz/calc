@@ -1,12 +1,13 @@
-const CACHE = "gshp-calc-v38";
+const CACHE = "gshp-calc-v41";
 const ASSETS = [
-  "/gshp-borehole-calculator.html",
-  "/favicon.svg",
-  "/gshp-icon-180.png",
-  "/gshp-icon-192.png",
-  "/gshp-icon-512.png",
-  "/gshp.webmanifest",
+  "./gshp-borehole-calculator.html",
+  "./favicon.svg",
+  "./gshp-icon-180.png",
+  "./gshp-icon-192.png",
+  "./gshp-icon-512.png",
+  "./manifest.json",
 ];
+
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
