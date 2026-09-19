@@ -27,6 +27,28 @@
   }
   keepOurs();
   document.addEventListener("DOMContentLoaded", keepOurs);
+  (function () {
+    var start = location.href.split("#")[0].split("?")[0];
+    var folder = new URL("./", location.href).href;
+    var man = {
+      name: "GSHP Borehole Calculator",
+      short_name: "GSHP Calc",
+      description: "Loop weight, over-drill and grout for vertical GSHP boreholes.",
+      start_url: start,
+      scope: folder,
+      display: "standalone",
+      background_color: "#1A1B1D",
+      theme_color: "#E8570F",
+      icons: [
+        { src: new URL("gshp-icon-180.png", location.href).href, sizes: "180x180", type: "image/png", purpose: "any" },
+        { src: new URL("gshp-icon-192.png", location.href).href, sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: new URL("gshp-icon-512.png", location.href).href, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      ]
+    };
+    var url = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: "application/manifest+json" }));
+    var link = document.querySelector('link[rel="manifest"]');
+    if (link) link.href = url;
+  })();
 })();
 </script>
 <style>
