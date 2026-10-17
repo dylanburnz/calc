@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en-GB" data-theme="dark">
+<!--
+  GSHP borehole calculator. Dylan Burns.
+  One html file. Pipe is always SDR 11, no selector.
+  Weight, grout, casing void, mud-flush water, and the purge / pressure test figures.
+  PDF is written out by hand, no library. The full pressure-test guide sits in a closed dropdown.
+-->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>GSHP Borehole Calculator</title>
+<meta name="description" content="Personal field calculator for vertical ground-source heat pump loop weight, over-drill and grout volume.">
+<meta name="theme-color" content="#E8570F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GSHP Calc">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="gshp-icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="gshp-icon-192.png">
+<link rel="apple-touch-icon" href="gshp-icon-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="gshp-icon-180.png">
+<link rel="manifest" href="manifest.json">
+<script>
+// home screen. strip any injected icon links that aren't ours.
+// manifest is built in js so the shortcut uses the url you're actually on
+(function(){
+  function keepOurs(){
+    document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="icon"],link[rel="manifest"]').forEach(function(el){
+      var h = el.getAttribute("href") || "";
+      if (h.indexOf("/__grok/") !== -1) el.parentNode && el.parentNode.removeChild(el);
+    });
+  }
+  keepOurs();
+  document.addEventListener("DOMContentLoaded", keepOurs);
+  (function () {
+    var start = location.href.split("#")[0].split("?")[0];
+    var folder = new URL("./", location.href).href;
+    var man = {
+      name: "GSHP Borehole Calculator",
+      short_name: "GSHP Calc",
+      description: "Loop weight, over-drill and grout for vertical GSHP boreholes.",
+      start_url: start,
+      scope: folder,
+      display: "standalone",
+      background_color: "#1A1B1D",
+      theme_color: "#E8570F",
+      icons: [
+        { src: new URL("gshp-icon-180.png", location.href).href, sizes: "180x180", type: "image/png", purpose: "any" },
+        { src: new URL("gshp-icon-192.png", location.href).href, sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: new URL("gshp-icon-512.png", location.href).href, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      ]
+    };
+    var url = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: "application/manifest+json" }));
+    var link = document.querySelector('link[rel="manifest"]');
+    if (link) link.href = url;
+  })();
+})();
+</script>
+<style>
+/* colours. dark is the one i use, light is there if the sun's on the screen */
+:root {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Oswald", ui-sans-serif, sans-serif;
+  --bg: #f0eeeb;
+  --grid: rgba(28, 29, 31, .05);
+  --panel: #fff;
+  --panel-2: #f4f2ef;
+  --ink: #1c1d1f;
+  --muted: #6b6d70;
+  --line: #dad7d2;
+  --accent: #e8570f;
+  --accent-ink: #b8420c;
+  --accent-fg: #1a1103;
+  --success: #2f7d5b;
+  --success-bg: rgba(47, 125, 91, .1);
+  --danger: #b23a3a;
+  --danger-bg: rgba(178, 58, 58, .1);
+  --pipe: #c3c0bb;
+  --pipe-stroke: #1c1d1f;
+  --mud: #c4b49a;
+  --shadow: 0 0 0 1px rgba(28, 29, 31, .06), 0 1px 2px -1px rgba(28, 29, 31, .06);
+  --stripe-b: var(--bg);
+  --radius: .5rem;
+}
+html[data-theme="dark"] {
+  --bg: #1a1b1d;
+  --grid: rgba(236, 237, 238, .045);
+  --panel: #232527;
+  --panel-2: #2b2d30;
+  --ink: #ecedee;
+  --muted: #9a9da1;
+  --line: #3a3d40;
+  --accent: #ff7a2e;
+  --accent-ink: #ffb37a;
+  --accent-fg: #1a1103;
+  --success: #59c29a;
+  --success-bg: rgba(89, 194, 154, .12);
+  --danger: #e2685f;
+  --danger-bg: rgba(226, 104, 95, .14);
+  --pipe: #4a4d50;
+  --pipe-stroke: #9a9da1;
+  --mud: #5c5346;
+  --shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+  --stripe-b: var(--panel);
+}
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font: 15px/1.45 var(--font-sans);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { text-wrap: pretty; }
+.wrap { max-width: 72rem; margin: 0 auto; padding: 1.25rem 1rem 7rem; display: flex; flex-direction: column; gap: 1.25rem; }
+/* header stays put when you scroll so the gear menu is always there */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin: -1.25rem -1rem 0;
+  padding: .4rem 1rem .45rem;
+  padding-top: max(.4rem, env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: 0; }
+header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(.95rem, 2.1vw, 1.15rem);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.15;
+}
+.head-tools { position: relative; flex-shrink: 0; }
+.lede { max-width: 36rem; margin: .5rem 0 0; color: var(--muted); font-size: .9rem; }
+.grid { display: flex; flex-direction: column; gap: 1.25rem; }
+.col-l, .col-r { display: contents; } /* phones: ignore the columns, follow the html order */
+.panel-loop { order: 1; }
+.panel-bore { order: 2; }
+.panel-rods { order: 3; }
+.panel-weight { order: 4; }
+.panel-grout { order: 5; }
+@media (min-width: 960px) {
+  /* wide screen: loop + weights left, borehole drawing and grout on the right */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 1.25rem;
+  }
+  .col-l, .col-r {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+  .panel-loop, .panel-bore, .panel-rods, .panel-weight, .panel-grout { order: unset; }
+}
+.panel {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+  border-top: 4px solid var(--accent);
+}
+.panel h2 {
+  display: flex; align-items: center; gap: .6rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.ico {
+  display: flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: .375rem;
+  background: var(--accent); color: var(--accent-fg); flex-shrink: 0;
+}
+.ico svg { width: 1.2rem; height: 1.2rem; }
+.field { margin-bottom: .9rem; }
+.field:last-child { margin-bottom: 0; }
+.field > span.label, .field > label {
+  display: block; min-height: 2rem; margin-bottom: .35rem;
+  font-size: .75rem; font-weight: 600; color: var(--muted); line-height: 1.3;
+}
+.hint { margin: .25rem 0 0; font-size: .75rem; color: var(--muted); line-height: 1.35; }
+.row2 { display: grid; grid-cols: 2; grid-template-columns: 1fr 1fr; gap: .75rem; }
+/* 16px or iphone zooms in when you tap a box. don't drop this */
+input[type="number"], input[type="text"], select {
+  width: 100%; height: 2.75rem; border: 1px solid var(--line);
+  border-radius: .375rem; background: var(--panel-2); color: var(--ink);
+  padding: 0 .7rem; font: 600 16px/1.2 var(--font-sans); font-variant-numeric: tabular-nums;
+  font-size: 16px !important;
+  scroll-margin-bottom: 40vh;
+}
+select {
+  appearance: none; cursor: pointer; padding-right: 2.75rem;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236B6D70' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 8 7-8'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 22px 22px;
+}
+html[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239a9da1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 8 7-8'/></svg>");
+}
+input:focus, select:focus, button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+.seg { display: flex; overflow: hidden; border: 1px solid var(--line); border-radius: .375rem; }
+.seg label {
+  flex: 1; min-height: 2.75rem; display: flex; align-items: center; justify-content: center;
+  padding: 0 .4rem; font-size: .8rem; font-weight: 600; text-align: center;
+  background: var(--panel-2); color: var(--muted); cursor: pointer; border-right: 1px solid var(--line);
+}
+.seg label:last-child { border-right: 0; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-fg); }
+.check { display: flex; align-items: center; gap: .6rem; min-height: 2.75rem; cursor: pointer; font-weight: 600; font-size: .9rem; }
+.check input { width: 1rem; height: 1rem; accent-color: var(--accent); }
+.hr { height: 1px; background: var(--line); margin: 1rem 0; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th { font-size: .75rem; font-weight: 600; color: var(--muted); padding: .4rem 0; border-bottom: 1px solid var(--line); }
+td { padding: .4rem 0; border-bottom: 1px solid var(--line); }
+td:first-child, th:first-child { text-align: left; color: var(--muted); font-weight: 500; padding-right: .5rem; }
+td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+tr.last td { border-bottom: 0; font-weight: 650; color: var(--ink); }
+tr.key-row td {
+  /* the numbers i actually look at on site */
+  padding: .5rem .65rem;
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+tr.key-row td:first-child {
+  color: var(--accent-ink);
+  font-weight: 650;
+  border-radius: .375rem 0 0 .375rem;
+}
+tr.key-row td:last-child {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 1.08rem;
+  border-radius: 0 .375rem .375rem 0;
+}
+tr.key-row td small { color: var(--accent-ink); font-weight: 600; }
+table.spaced { border-collapse: separate; border-spacing: 0 .4rem; }
+table.spaced td { border-bottom: 0; }
+.num { font-weight: 500; }
+.num small { margin-left: .25rem; font-size: .75rem; font-weight: 400; color: var(--muted); }
+.plan { display: grid; gap: 1rem; align-items: start; }
+@media (min-width: 520px) { .plan { grid-template-columns: auto 1fr; } }
+#section { display: block; width: 14rem; height: 14rem; margin: 0 auto; }
+.legend { font-size: .8rem; color: var(--muted); line-height: 1.8; }
+.sw { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; margin-right: .45rem; vertical-align: middle; }
+.banner { margin-top: 1rem; padding: .75rem .9rem; border-radius: var(--radius); font-size: .875rem; line-height: 1.45; }
+.banner.ok { background: var(--success-bg); color: var(--success); }
+.banner.bad { background: var(--danger-bg); color: var(--danger); }
+.banner b { display: block; margin-bottom: .15rem; font-family: var(--font-sans); }
+.range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--line); margin: .5rem 0 .25rem; }
+.field > input[type="number"] + .range { margin-top: .55rem; }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line); }
+.range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); }
+.ticks { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: .4rem; }
+.sink { margin-top: 1rem; }
+.sink-line {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  padding: .5rem .65rem; margin-bottom: .45rem;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: .375rem;
+}
+.sink-line label { color: var(--accent-ink); font-weight: 650; font-size: .9rem; }
+.sink-line #sfLabel { color: var(--accent); font-weight: 700; font-size: 1.08rem; font-variant-numeric: tabular-nums; }
+.more { margin-top: .15rem; }
+.more summary {
+  display: flex; align-items: center; gap: .3rem;
+  cursor: pointer; list-style: none;
+  font-size: .75rem; font-weight: 600; color: var(--muted);
+}
+.more summary::-webkit-details-marker { display: none; }
+.more[open] .chev { transform: rotate(180deg); }
+.more .chev { margin-left: 0; }
+.more .chev svg { width: 1rem; height: 1rem; }
+.more .hint { margin-top: .4rem; }
+.guide-drop { margin-top: .85rem; }
+.guide-drop > summary { font-size: .85rem; color: var(--ink); }
+.guide { margin-top: .7rem; font-size: .8rem; line-height: 1.45; color: var(--ink); }
+.guide h3 { font-family: var(--font-display); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink); margin: .95rem 0 .3rem; }
+.guide h3:first-child { margin-top: 0; }
+.guide p { margin: .3rem 0; }
+.guide ul, .guide ol { margin: .2rem 0 .45rem; padding-left: 1.15rem; }
+.guide li { margin: .28rem 0; }
+.guide .scroll { overflow-x: auto; margin: .35rem 0 .5rem; }
+.guide table { font-size: .75rem; min-width: 28rem; }
+.guide th, .guide td { padding: .35rem .45rem; white-space: nowrap; text-align: left; }
+.method { margin-top: 0; }
+.method summary { display: flex; align-items: center; gap: .6rem; cursor: pointer; list-style: none; }
+.method summary::-webkit-details-marker { display: none; }
+.method[open] .chev { transform: rotate(180deg); }
+.chev { margin-left: auto; color: var(--muted); display: inline-flex; transition: transform .15s; }
+.chev svg { width: 1.35rem; height: 1.35rem; }
+.formulas { display: grid; gap: 1rem; margin-top: .75rem; }
+@media (min-width: 640px) { .formulas { grid-template-columns: 1fr 1fr; } }
+.formula h3 { font-family: var(--font-display); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); margin-bottom: .4rem; }
+.formula pre {
+  margin: 0; white-space: pre-wrap; font: .75rem/1.5 ui-monospace, Menlo, Consolas, monospace;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: .375rem; padding: .75rem .9rem;
+}
+.formula.wide { grid-column: 1 / -1; }
+.foot { margin-top: 0; border-top: 1px solid var(--line); padding-top: .9rem; font-size: .75rem; color: var(--muted); line-height: 1.5; }
+.by { margin-top: .75rem; font-style: italic; font-weight: 600; color: var(--ink); }
+.icon-btn {
+  width: 2.75rem; height: 2.75rem; border: 0; background: transparent; color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; border-radius: .375rem;
+}
+.menu {
+  position: absolute; right: 0; top: 100%; margin-top: .4rem; width: 15.5rem;
+  background: var(--panel); box-shadow: var(--shadow); border-radius: .375rem; padding: .35rem;
+  z-index: 20;
+}
+.menu button {
+  width: 100%; height: 2.75rem; display: flex; align-items: center; gap: .5rem;
+  border: 0; background: transparent; color: var(--ink); font: 650 .9rem var(--font-sans);
+  padding: 0 .75rem; border-radius: .375rem; text-align: left;
+}
+.menu button:active { transform: scale(.96); }
+.export-btn {
+  margin-top: 1rem; width: 100%; height: 2.75rem; display: flex; align-items: center; justify-content: center; gap: .55rem;
+  border: 0; border-radius: .375rem; background: var(--accent); color: var(--accent-fg);
+  font: 650 .95rem var(--font-sans); cursor: pointer;
+}
+.export-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.export-btn:active { transform: scale(.98); }
+.steps { margin: .35rem 0 0; padding-left: 1.15rem; color: var(--muted); font-size: .8rem; line-height: 1.45; }
+.steps li { margin: .2rem 0; }
+.step-h { margin: .9rem 0 .15rem; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink); }
+.overlay {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--bg) 80%, transparent); padding: 1rem;
+}
+.card { width: 100%; max-width: 26rem; background: var(--panel); border-radius: .5rem; box-shadow: var(--shadow); padding: 1.25rem; }
+.card h2 { font-family: var(--font-display); font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; }
+[hidden] { display: none !important; }
+.print-only { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+@media print {
+  /* if someone prints the page instead of the pdf. force white, hide the inputs */
+  @page { margin: 12mm; color: #111; background: #fff; }
+  html, html[data-theme="dark"], html[data-theme="light"], body {
+    background: #fff !important;
+    color: #111 !important;
+    --bg: #fff !important;
+    --grid: rgba(28, 29, 31, .05) !important;
+    --panel: #fff !important;
+    --panel-2: #f4f2ef !important;
+    --ink: #111 !important;
+    --muted: #555 !important;
+    --line: #ccc !important;
+    --accent: #e8570f !important;
+    --accent-ink: #b8420c !important;
+    --accent-fg: #1a1103 !important;
+    --mud: #c4b49a !important;
+    --pipe: #c3c0bb !important;
+    --pipe-stroke: #111 !important;
+    --stripe-b: #fff !important;
+    --success: #2f7d5b !important;
+    --danger: #b23a3a !important;
+  }
+  .no-print, .overlay, .menu, .print-hide { display: none !important; }
+  .print-only { display: block !important; }
+  .wrap { padding: 0 0 1rem; background: #fff !important; color: #111 !important; }
+  header {
+    position: static;
+    margin: 0 0 1rem;
+    padding: 0;
+    background: #fff !important;
+    border-bottom: 0;
+    backdrop-filter: none;
+  }
+  .grid { display: block !important; }
+  .panel { box-shadow: none; border: 1px solid #ccc; background: #fff !important; color: #111 !important; break-inside: avoid; }
+  .method { display: none; }
+  header h1 { font-size: 1.1rem; color: #111 !important; }
+  table, td, th, p, h1, h2, small, .hint, .legend, .by { color: #111 !important; }
+}
+</style>
+<script>
+/* remember light/dark before the page paints, otherwise it flashes */
+(function(){try{var t=localStorage.getItem("gshp-theme-pref");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <!-- title bar. gear opens pdf, home screen and light/dark -->
+  <header>
+    <div class="head-row">
+      <h1>GSHP Borehole Calculator</h1>
+      <div class="head-tools no-print">
+        <div class="menu" id="menu" hidden>
+          <button type="button" id="btnPdf"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>Export PDF</button>
+          <button type="button" id="btnInstall"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><rect x="4" y="15" width="16" height="6" rx="1"/></svg>Add to Home Screen</button>
+          <button type="button" id="btnTheme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="themeIcon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span id="themeLabel">Dark</span></button>
+        </div>
+        <button type="button" class="icon-btn" id="btnGear" aria-label="Open tools" aria-expanded="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H8a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V8c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="print-only" id="printSite" style="margin:.4rem 0 0;font-weight:600"></p>
+  </header>
+
+  <section class="panel print-only" id="keyPanel">
+    <!-- only shows if you print the page. pdf is separate -->
+    <h2>Key data</h2>
+    <table><tbody id="keyRows"></tbody></table>
+  </section>
+
+  <div class="grid">
+    <div class="col-l">
+<section class="panel panel-loop print-hide">
+        <!-- loop inputs: od, design depth, water fill, tremie. always a single loop, SDR 11 -->
+        <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v11a6 6 0 0 0 12 0V3"/><path d="M6 3H4"/><path d="M18 3h2"/></svg></span>Loop</h2>
+        <div class="field">
+          <span class="label">Loop pipe diameter (OD)</span>
+          <div class="seg" role="radiogroup" aria-label="Loop pipe diameter" data-name="loopOD">
+            <label><input type="radio" name="loopOD" value="32">32 mm</label>
+            <label><input type="radio" name="loopOD" value="40">40 mm</label>
+            <label><input type="radio" name="loopOD" value="45">45 mm</label>
+            <label><input type="radio" name="loopOD" value="50" checked>50 mm</label>
+          </div>
+          <p class="hint" id="wallHint"></p>
+        </div>
+        <div class="field">
+            <label for="depth">Design loop depth (m)</label>
+            <input id="depth" name="depth" type="number" min="1" step="1" value="250" inputmode="numeric">
+            <input class="range" id="depthSlide" type="range" min="1" max="500" step="1" value="250" aria-label="Design loop depth">
+            <div class="ticks"><span>1</span><span>250</span><span>500</span></div>
+          </div>
+        <label class="check"><input type="checkbox" id="prefill" checked> Pre-fill loop with water</label>
+        <div class="hr"></div>
+        <label class="check"><input type="checkbox" id="tremieOn" checked> Include an open tremie pipe</label>
+        <div class="field" id="tremieField">
+          <span class="label">Tremie pipe diameter (OD)</span>
+          <div class="seg" role="radiogroup" aria-label="Tremie pipe diameter">
+            <label><input type="radio" name="tremieOD" value="32">32 mm</label>
+            <label><input type="radio" name="tremieOD" value="40" checked>40 mm</label>
+          </div>
+        </div>
+      </section>
+
+<section class="panel panel-rods print-hide">
+        <!-- rods to make the required hole. count is rounded up so the string reaches -->
+        <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v18"/><path d="M16 3v18"/><path d="M8 8h8"/><path d="M8 16h8"/></svg></span>Drill rods required</h2>
+        <div class="field">
+          <label for="drillRod">Rod length (m)</label>
+          <input id="drillRod" name="drillRod" type="number" min="0.1" step="any" value="3" inputmode="decimal">
+          <input class="range" id="drillRodSlide" type="range" min="0" max="3" step="1" value="1" aria-label="Rod length">
+          <div class="ticks"><span>2</span><span>3</span><span>5</span><span>6</span></div>
+        </div>
+        <table>
+          <tbody>
+            <tr><td>Rod count</td><td id="o-drillCount"></td></tr>
+            <tr class="last"><td>String length</td><td id="o-drillString"></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+<section class="panel panel-weight print-hide">
+        <!-- how much steel to hang on the loop, then the force table underneath.
+             orange rows (recommended weight, total depth) are the ones that go on the pdf -->
+        <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v5"/><path d="M9 7h6"/><rect x="6" y="7" width="12" height="15" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>Loop weight required</h2>
+        <table>
+          <tbody>
+            <tr><td>Net upward force</td><td id="o-netTotal"></td></tr>
+            <tr><td>Minimum mass for neutral buoyancy</td><td id="o-loopWeightMass"></td></tr>
+            <tr><td>Required mass (with sink margin)</td><td id="o-adjustedMass"></td></tr>
+            <tr><td id="l-units">Units</td><td id="o-units"></td></tr>
+            <tr class="key-row"><td>Recommended weight</td><td id="o-installedMass"></td></tr>
+            <tr><td id="l-rod">Stack length</td><td id="o-rodLen"></td></tr>
+            <tr><td>Over-drill</td><td id="o-overdrill"></td></tr>
+            <tr class="last key-row"><td>Required borehole depth</td><td id="o-totalDepth"></td></tr>
+          </tbody>
+        </table>
+        <div class="banner bad" id="footLoadWarn" hidden></div>
+        <!-- buoyancy split between the loop and the tremie -->
+        <table style="margin-top:1rem">
+          <thead>
+            <tr><th>Force balance</th><th>Loop</th><th>Tremie</th><th>Total</th></tr>
+          </thead>
+          <tbody id="forceRows"></tbody>
+        </table>
+        <div class="hr"></div>
+        <!-- rebar is taped to the loop, so no overdrill. modular weights stack under the foot -->
+        <label class="check"><input type="checkbox" id="rebarOn"> Use rebar instead of modular weights</label>
+        <p class="hint">40mm × 3m, ≈29.6kg each.</p>
+        <div class="sink">
+          <!-- extra factor on the weight so it actually sinks. description is hidden until more info -->
+          <div class="sink-line">
+            <label for="safetyFactor">Sink margin</label>
+            <span id="sfLabel"></span>
+          </div>
+          <input class="range" id="safetyFactor" type="range" min="1" max="2" step="0.01" value="1.5">
+          <div class="ticks"><span>1.0</span><span>1.5</span><span>2.0</span></div>
+          <details class="more">
+            <summary>More info <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
+            <p class="hint">Extra weight beyond neutral buoyancy, so the loop sinks under its own weight rather than needing to be pushed in. 1.0 = weight exactly cancels buoyancy. 1.5 is a sensible starting point — lower it where a sustained rest water is low or a flowing aquifer is thinning the mud; raise it where friction is higher, such as a deviated borehole, swelling, or unstable ground.</p>
+          </details>
+        </div>
+      </section>
+    </div>
+    <div class="col-r">
+<section class="panel panel-bore">
+        <!-- bit size and mud weight, then the cross section of the pipes in the hole -->
+        <h2 class="print-hide"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg></span>Borehole & fluid</h2>
+        <div class="field print-hide">
+            <label for="boreDiaMM">Borehole diameter / Drill bit size</label>
+            <select id="boreDiaMM" name="boreDiaMM"></select>
+            <p class="hint" id="boreHint"></p>
+          </div>
+        <div class="field print-hide">
+            <label for="mudDens">Target mud weight (g/cm³)</label>
+            <input id="mudDens" name="mudDens" type="number" min="1" step="0.01" value="1.1" inputmode="decimal">
+            <input class="range" id="mudDensSlide" type="range" min="1" max="1.4" step="0.01" value="1.1" aria-label="Target mud weight">
+            <div class="ticks"><span>1.0</span><span>1.2</span><span>1.4</span></div>
+            <p class="hint">Water ≈ 1.0. Bentonite mud 1.1–1.3.</p>
+          </div>
+        <div class="hr print-hide"></div>
+        <div class="plan">
+          <!-- empty until render() draws the borehole, pipes, tremie and the foot -->
+          <svg id="section" viewBox="0 0 220 220" role="img" aria-label="Borehole cross-section"></svg>
+          <div>
+            <p style="font-family:var(--font-display);font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin:0 0 .4rem">Cross section</p>
+            <div class="legend" id="legend"></div>
+          </div>
+        </div>
+        <div class="banner print-hide" id="clearance"></div>
+        <!-- green if there's room, red if the bundle or the foot is tight or won't fit -->
+      </section>
+
+<section class="panel panel-grout print-hide">
+        <!-- grout per hole. casing tick adds the wider top section left when the casing is pulled -->
+        <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l-1.5 6h-5L8 2z"/><path d="M10 8v3h4V8"/><rect x="6" y="11" width="12" height="11" rx="1"/><path d="M6 16h12"/></svg></span>Grout volume</h2>
+        <label class="check"><input type="checkbox" id="casingOn"> Include casing void</label>
+        <div id="casingFields" hidden>
+          <div class="field" style="margin-top:.75rem">
+            <label for="casingOD">Casing</label>
+            <select id="casingOD">
+              <option value="152" selected>WE 152 mm OD</option>
+              <option value="169">WW 169 mm OD</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="casingLen">Casing length (m)</label>
+            <input id="casingLen" name="casingLen" type="number" min="0" step="1" value="30" inputmode="decimal">
+            <input class="range" id="casingLenSlide" type="range" min="0" max="200" step="1" value="30" aria-label="Casing length">
+            <div class="ticks"><span>0</span><span>100</span><span>200</span></div>
+          </div>
+        </div>
+        <table>
+          <tbody>
+            <tr><td>Total borehole volume</td><td id="o-boreVolTotal"></td></tr>
+            <tr><td>Loop pipe displacement</td><td id="o-loopVouter"></td></tr>
+            <tr id="tremDispRow"><td>Tremie displacement (wall only)</td><td id="o-tremVwall"></td></tr>
+            <tr><td id="l-wdisp">Loop weight displacement</td><td id="o-weightDispVol"></td></tr>
+            <tr id="casingVoidRow" hidden><td>Casing void</td><td id="o-casingVoid"></td></tr>
+            <tr class="key-row"><td>Grout volume (per hole)</td><td id="o-groutVolume"></td></tr>
+            <tr><td>Mix water (per hole)</td><td id="o-groutWater"></td></tr>
+            <tr class="last key-row"><td>Number of gauges</td><td id="o-groutGauges"></td></tr>
+          </tbody>
+        </table>
+        <p class="hint">1.78 W/m·K mix. 5:1 Sand:Bentonite, 80L water per gauge.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel print-hide" id="testPanel">
+    <!-- purge flow, pressure drop, short steps, and the full pressure-test guide behind the dropdown -->
+    <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19a8 8 0 1 1 14 0"/><circle cx="12" cy="13" r="1.6" fill="currentColor" stroke="none"/><path d="M12 13 16.2 9"/></svg></span>Testing parameters</h2>
+    <table class="spaced">
+      <tbody>
+        <tr class="key-row last"><td>Min purge / flow test (0.6 m/s)</td><td id="t-flow"></td></tr>
+      </tbody>
+    </table>
+    <div class="field" style="margin-top:.35rem">
+      <label for="pumpFlow">Actual pump flow (L/min)</label>
+      <input id="pumpFlow" name="pumpFlow" type="number" min="1" step="1" value="50" inputmode="decimal">
+      <input class="range" id="pumpFlowSlide" type="range" min="48" max="150" step="1" value="50" aria-label="Actual pump flow">
+      <div class="ticks"><span id="pumpTickMin">48</span><span id="pumpTickMax">150</span></div>
+    </div>
+    <table class="spaced">
+      <tbody>
+        <tr class="key-row"><td>Expected pressure drop</td><td id="t-dp"></td></tr>
+        <tr class="key-row last"><td>Pass window (±10%)</td><td id="t-band"></td></tr>
+      </tbody>
+    </table>
+    <p class="hint" id="t-note"></p>
+    <p class="step-h">Purge / flow test</p>
+    <ol class="steps">
+      <li>Clean mains water only. Pump at or above the flow above.</li>
+      <li>Run until the sight glass is a solid clear stream, then at least 20 minutes, and a 100–200 µm bag stays empty for 10 minutes.</li>
+      <li>At a steady flow, the gauge’s across the loop must read with pressure drop differential inside the pass window. High means air or a pinch/kink. Low means a bypass.</li>
+    </ol>
+    <p class="step-h">Pressure test</p>
+    <ol class="steps">
+      <li>Rest the isolated loop at 0 bar for 60 minutes.</li>
+      <li>Bring it to 6.0 bar in under 10 minutes. Hold 6.0 bar for 30 minutes, topping up as the pipe expands.</li>
+      <li>Isolate the pump. After 60 minutes (P60) the gauge must still read at least 4.2 bar.</li>
+      <li>Bleed quickly by 10–15% (a 6.0 bar P60 goes to 5.1 bar) and shut the valve. Over the next 30 minutes the needle must rise or stay still. If it falls, there is a leak — drop to 0 bar and wait 8 hours before another test.</li>
+    </ol>
+    <details class="more guide-drop">
+      <summary>Full guide <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
+      <div class="guide">
+        <h3>Quick reference</h3>
+        <ul>
+          <li><b>Test pressure (STP):</b> 6.0 bar. That is 1.5 × the design operating pressure, and never below 6.0 bar. Check the job spec if it asks for more.</li>
+          <li><b>Stand:</b> 60 minutes isolated at 0 bar, so the pipe can relax.</li>
+          <li><b>Pressurise:</b> 0 to 6.0 bar in under 10 minutes, without stopping.</li>
+          <li><b>Expansion hold:</b> 30 minutes pinned on 6.0 bar. Top up in small spurts as the pipe expands.</li>
+          <li><b>Decay:</b> pump isolated. After 60 minutes record P60. It must still be at least 4.2 bar.</li>
+          <li><b>Bleed:</b> drop 10–15%, fast, to the PAB on the chart. Then shut the valve.</li>
+          <li><b>Rebound:</b> leave it isolated for 30 minutes and record the final pressure (FRP). It should climb a little or stay still.</li>
+        </ul>
+        <h3>Procedure</h3>
+        <ol>
+          <li><b>De-air.</b> Flush with clean water until the discharge is clear of bubbles. Isolate and rest at 0 bar for at least 60 minutes.</li>
+          <li><b>Expansion.</b> Bring the loop to 6.0 bar in under 10 minutes. Hold 6.0 bar for 30 minutes. The needle will fall as the pipe stretches — pump small top-ups so it stays on 6.0 bar the whole time.</li>
+          <li><b>Decay.</b> Isolate the pump and start 60 minutes. P60 is the gauge at the end. If it is under 4.2 bar (70% of 6.0), stop. That is trapped air or a leak.</li>
+          <li><b>Bleed and rebound.</b> Find P60 on the chart. Bleed quickly to that PAB and shut the valve at once. Leave it isolated for 30 minutes and watch the needle.</li>
+        </ol>
+        <h3>Bleed chart</h3>
+        <p>Find P60, bleed to the PAB next to it. Figures are the nearest 0.1 bar inside a 10–15% drop.</p>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>P60</th><th>PAB</th><th>Drop</th></tr></thead>
+            <tbody>
+              <tr><td>4.2 bar (minimum pass)</td><td>3.6 bar</td><td>14.3%</td></tr>
+              <tr><td>4.3 bar</td><td>3.7 bar</td><td>14.0%</td></tr>
+              <tr><td>4.4 bar</td><td>3.8 bar</td><td>13.6%</td></tr>
+              <tr><td>4.5 bar</td><td>3.9 bar</td><td>13.3%</td></tr>
+              <tr><td>4.6 bar</td><td>4.0 bar</td><td>13.0%</td></tr>
+              <tr><td>4.7 bar</td><td>4.0 bar</td><td>14.9%</td></tr>
+              <tr><td>4.8 bar</td><td>4.1 bar</td><td>14.6%</td></tr>
+              <tr><td>4.9 bar</td><td>4.2 bar</td><td>14.3%</td></tr>
+              <tr><td>5.0 bar</td><td>4.3 bar</td><td>14.0%</td></tr>
+              <tr><td>5.1 bar</td><td>4.4 bar</td><td>13.7%</td></tr>
+              <tr><td>5.2 bar</td><td>4.5 bar</td><td>13.5%</td></tr>
+              <tr><td>5.3 bar</td><td>4.6 bar</td><td>13.2%</td></tr>
+              <tr><td>5.4 bar</td><td>4.6 bar</td><td>14.8%</td></tr>
+              <tr><td>5.5 bar</td><td>4.7 bar</td><td>14.5%</td></tr>
+              <tr><td>5.6 bar</td><td>4.8 bar</td><td>14.3%</td></tr>
+              <tr><td>5.7 bar</td><td>4.9 bar</td><td>14.0%</td></tr>
+              <tr><td>5.8 bar</td><td>5.0 bar</td><td>13.8%</td></tr>
+              <tr><td>5.9 bar</td><td>5.1 bar</td><td>13.6%</td></tr>
+              <tr><td>6.0 bar</td><td>5.1 bar</td><td>15.0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Pass, fail, and retest</h3>
+        <ul>
+          <li><b>Pass:</b> over the last 30 minutes the pressure rises or stays flat.</li>
+          <li><b>Fail:</b> the pressure keeps falling. That is a leak in the loop, a manifold joint, or a fitting.</li>
+          <li><b>If it fails:</b> drop the loop back to 0 bar. Leave it at least 8 hours before testing again.</li>
+        </ul>
+        <h3>Glossary</h3>
+        <ul>
+          <li><b>STP</b> — system test pressure. The 6.0 bar you pump up to and hold.</li>
+          <li><b>P60</b> — the gauge reading 60 minutes after the pump is isolated.</li>
+          <li><b>PAB</b> — pressure after bleeding. The figure you drop to, from the chart.</li>
+          <li><b>FRP</b> — final rebound pressure, read 30 minutes after the bleed.</li>
+        </ul>
+        <p class="hint">GSHPA Vertical Borehole Standard section 10, using the creep and rebound method in BS EN 805 and the WRc guidance.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel" id="materialsPanel">
+    <!-- what to take to site. site name is also the pdf filename -->
+    <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6V4h8v2"/><rect x="6" y="6" width="12" height="14" rx="1"/><path d="M9 11h6M9 15h4"/></svg></span>Materials list</h2>
+    <div class="row2 print-hide" style="margin-bottom:1rem">
+      <div class="field">
+        <label for="siteName">Site name</label>
+        <input id="siteName" name="siteName" type="text" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="holes">Number of boreholes</label>
+        <input id="holes" name="holes" type="number" min="1" step="1" value="1" inputmode="numeric">
+        <input class="range" id="holesSlide" type="range" min="1" max="200" step="1" value="1" aria-label="Number of boreholes">
+        <div class="ticks"><span>1</span><span>100</span><span>200</span></div>
+      </div>
+    </div>
+    <div class="field print-hide" style="margin-bottom:1rem">
+      <!-- guess at flush water. multiplied by the number of holes and added to the total -->
+      <label for="mudFlush">Water volume estimate for mud flush per hole</label>
+      <input id="mudFlush" name="mudFlush" type="number" min="0" step="100" value="5000" inputmode="numeric">
+      <input class="range" id="mudFlushSlide" type="range" min="0" max="100000" step="100" value="5000" aria-label="Mud flush water per hole">
+      <div class="ticks"><span>0</span><span>50,000</span><span>100,000 L</span></div>
+    </div>
+    <table>
+      <!-- filled by render(): loops, tremie, weights, grout, bags, water -->
+      <thead><tr><th>Item</th><th>Quantity</th></tr></thead>
+      <tbody id="matRows"></tbody>
+    </table>
+    <button type="button" class="export-btn print-hide" id="btnPdfList">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M14 2v6h6"/><text x="12" y="17.5" text-anchor="middle" font-size="5.6" font-weight="700" fill="currentColor" stroke="none" font-family="ui-sans-serif,system-ui,sans-serif">PDF</text></svg>
+      Export PDF
+    </button>
+  </section>
+
+  <details class="panel method">
+    <!-- the working behind the numbers. collapsed until you open it. not on the pdf -->
+    <summary>
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14L12 12l7 7H5"/></svg></span>
+      <h2 style="margin:0">Calculation method</h2>
+      <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </summary>
+    <p class="hint">Every formula behind the figures above, in order.</p>
+    <div class="formulas">
+      <div class="formula"><h3>Pipe geometry</h3><pre>Pipe is SDR 11. Wall thickness = Outer diameter / 11
+Inner diameter = Outer diameter − 2 × Wall thickness
+Outer area = π/4 × Outer diameter²
+Inner area = π/4 × Inner diameter²
+Wall area  = Outer area − Inner area</pre></div>
+      <div class="formula"><h3>Cross-section clearance</h3><pre>Bundle = smallest circle around loops + tremie
+Loop pipes sit with a gap of 2 × wall thickness (how they are fixed in the probe foot)
+Probe foot (cross-section pill)
+  Wall thickness t = OD / 11
+  Widest  = 2 × OD + 4 × t
+  Narrowest = Widest / 2
+  50 mm: t = 4.55 mm → 118.2 × 59.1 mm
+Governing size = max(Bundle, foot widest, foot narrowest)
+Clearance = Borehole diameter − Governing size</pre></div>
+      <div class="formula"><h3>Loop force balance (closed, pre-filled)</h3><pre>Mud density (kg/m³) = Target mud weight (g/cm³) × 1000
+Buoyancy = Mud density × Outer area × Depth × Pipe count
+Pipe weight = HDPE density × Wall area × Depth × Pipe count
+Fill weight = Water density × Inner area × Depth × Pipe count
+Net force = Buoyancy − Pipe weight − Fill weight</pre></div>
+      <div class="formula"><h3>Tremie force balance (open, floods with mud)</h3><pre>Buoyancy = Mud density × Wall area × Depth
+Pipe weight = HDPE density × Wall area × Depth
+Net force = Buoyancy − Pipe weight
+          = (Mud density − HDPE density) × Wall area × Depth</pre></div>
+      <div class="formula"><h3>Loop weight sizing</h3><pre>Buoyancy factor = 1 − (Mud density / Steel density)
+Minimum mass = Net force / Buoyancy factor
+Required mass = Minimum mass × Sink margin
+
+Modular weights: Units = ceil(Required mass / 40kg)
+                 Stack length = Units × 1.1m
+                 Over-drill = Stack length
+
+Rebar:           Units = ceil(Required mass / 29.6kg)
+                 Rebar length = Units × 3m
+                 Over-drill = 0 (taped along the loop)
+
+Total depth = Design depth + Over-drill</pre></div>
+      <div class="formula"><h3>Grout volume</h3><pre>Borehole volume = π/4 × Borehole diameter² × Total depth
+Displacement = Loop pipe volume + Tremie wall volume + Weight stack volume
+Casing void = π/4 × (Casing OD² − Borehole diameter²) × Casing length
+             (0 if the casing is not wider than the borehole; length limited to total depth)
+Grout volume = Borehole volume − Displacement + Casing void</pre></div>
+      <div class="formula"><h3>Grout mix (fixed: 1.78 W/m·K, 5:1 sand:bentonite)</h3><pre>Mixed mass = Grout volume × Grout density (1.59 kg/L)
+Total solids = Mixed mass × Solids fraction (65.1%)
+Mix water = Mixed mass × (1 − 65.1%)   ≈ litres (1 kg ≈ 1 L)
+           ≈ 80 L per 6-bag gauge (1 bentonite + 5 sand)
+Bentonite mass = Total solids / 6
+Silica sand mass = Total solids × 5/6
+Bags = ceil(Mass / 25kg)
+Pallets = ceil(Bags / 40)</pre></div>
+      <div class="formula"><h3>Water (materials list)</h3><pre>Loop fill = Inner area × Ordered loop length (design depth + 5 m) × Pipe count
+Grout mix water = Mixed mass × (1 − 65.1%)
+Mud flush = Estimate per hole × Number of boreholes
+Total water = Loop fill + Grout mix water + Mud flush   (site totals, litres)</pre></div>
+      <div class="formula wide"><h3>Purge / flow test</h3><pre>Bore = OD − 2 × (OD / 11)
+Area = π/4 × Bore²
+Min flow = 0.6 m/s × Area
+
+32 mm   bore 26.18 mm   19.4 L/min
+40 mm   bore 32.73 mm   30.3 L/min
+45 mm   bore 36.82 mm   38.3 L/min
+50 mm   bore 40.91 mm   47.3 L/min
+
+Pump flow starts at the next 5 L/min above that minimum.
+Pressure drop uses the pump flow you set, not the minimum.</pre></div>
+      <div class="formula wide"><h3>Pressure drop / friction loss</h3><pre>Path = 2 × design depth
+v = pump flow / Area
+Water at 10°C.  Viscosity 1.306×10⁻⁶ m²/s.  Density 999.7 kg/m³.  PE roughness 0.007 mm.
+
+Reynolds  Re = v × Bore / 1.306×10⁻⁶
+Friction  f  = 0.25 / [log₁₀(roughness / (3.7 × Bore) + 5.74 / Re⁰·⁹)]²
+Head      hf = f × (Path / Bore) × (v² / (2 × 9.81))
+Drop      ΔP = 999.7 × 9.81 × hf / 100000     (bar)
+
+Pass window = drop × 0.9 to drop × 1.1</pre></div>
+    </div>
+  </details>
+
+  <footer class="foot">
+    <!-- credit line, not a running total -->
+    <p class="by">Calculator by Dylan Burns</p>
+  </footer>
+</div>
+
+<div class="overlay no-print" id="installOverlay" hidden>
+  <!-- instructions when add to home screen can't prompt the phone itself -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start">
+      <h2>Add to Home Screen</h2>
+      <button type="button" class="icon-btn" id="btnCloseInstall" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <p class="hint" style="margin-top:.6rem" id="installHint">Use your browser menu to install this calculator, or follow the steps for your phone.</p>
+    <ol class="hint" id="installSteps" style="margin:.75rem 0 0;padding-left:1.15rem;line-height:1.55">
+      <li>Open this page in Safari.</li>
+      <li>Tap the Share button.</li>
+      <li>Tap <b>Add to Home Screen</b>, then Add.</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+/* all the working. pipe is SDR 11, fixed.
+   pipeGeom / bundleCircles / footPill  - sizes and the plan, foot is a pill
+   loopTest                               - 0.6 m/s flow and the darcy pressure drop
+   compute                                - weight, overdrill, grout, casing void, water
+   render                                 - tables, warning, drawing, test figures
+   buildPdfBlob                           - job sheet plus the testing parameters
+*/
+(function () {
+  const SDR = 11;
+  // densities, kg/m3. hdpe is near enough for the pipe weight
+  const STEEL_DENS = 7850, HDPE_DENS = 950, WATER_DENS = 1000;
+  // what the foot will carry, kg. modular weights only - rebar is taped on, not hung off the foot
+  const MGS_FOOT_LOAD = {
+    25: { 2: 40, 4: 80 },
+    32: { 2: 200, 4: 400 },
+    40: { 2: 300, 4: 600 },
+    45: { 2: 400, 4: 800 },
+    50: { 2: 500, 4: 1000 }
+  };
+  const PERCENT_SOLIDS = 0.651, GROUT_DENSITY_KG_PER_L = 1.59, SAND_RATIO = 5, BAG_KG = 25, BAGS_PER_PALLET = 40, GAUGE_WATER_L = 80;
+  // hole sizes i actually get asked for. mm is od of the bore, not a casing
+  const BORE_SIZES = [
+    [101.6, '4" (101.6 mm)'], [114.3, '4 1/2" (114.3 mm)'], [120.7, '4 3/4" (120.7 mm)'],
+    [127.0, '5" (127.0 mm)'], [130.2, '5 1/8" (130.2 mm)'], [133.4, '5 1/4" (133.4 mm)'],
+    [136.5, '5 3/8" (136.5 mm)'], [139.7, '5 1/2" (139.7 mm)'], [142.9, '5 5/8" (142.9 mm)'],
+    [146.1, '5 3/4" (146.1 mm)'], [149.2, '5 7/8" (149.2 mm)'], [152.4, '6" (152.4 mm)'], [158.8, '6 1/4" (158.8 mm)'],
+    [171.5, '6 3/4" (171.5 mm)'], [177.8, '7" (177.8 mm)'], [193.7, '7 5/8" (193.7 mm)'],
+    [200.0, '7 7/8" (200.0 mm)'], [203.2, '8" (203.2 mm)']
+  ];
+  const boreSel = document.getElementById("boreDiaMM");
+  BORE_SIZES.forEach(([mm, label]) => {
+    const o = document.createElement("option");
+    o.value = String(mm); o.textContent = label;
+    if (mm === 142.9) o.selected = true;
+    boreSel.appendChild(o);
+  });
+
+  function pipeFriction(D, v) {
+    // 10°C water, PE roughness 0.007 mm. Swamee-Jain
+    const nu = 1.306e-6, eps = 7e-6;
+    const Re = Math.max(v * D / nu, 4000);
+    const t = Math.log10(eps / (3.7 * D) + 5.74 / Math.pow(Re, 0.9));
+    return 0.25 / (t * t);
+  }
+  function dropBar(D, depth, v) {
+    // round trip: design depth down and back. head to bar at 10°C
+    const f = pipeFriction(D, v);
+    const g = 9.81, rho = 999.7;
+    const hf = f * ((2 * depth) / D) * (v * v / (2 * g));
+    return rho * g * hf / 1e5;
+  }
+  function loopTest(odMm, sdr, depth, pumpLpm) {
+    // minimum is 0.6 m/s. the pump box can sit higher, and the drop follows that
+    const boreMm = odMm - 2 * (odMm / sdr);
+    const D = boreMm / 1000;
+    const area = (Math.PI / 4) * D * D;
+    const minLpm = 0.6 * area * 60000;
+    let lpm = Number(pumpLpm);
+    if (!Number.isFinite(lpm) || lpm < minLpm) lpm = Math.ceil((minLpm - 1e-6) / 5) * 5;
+    const v = (lpm / 60000) / area;
+    const dp = dropBar(D, depth, v);
+    return { boreMm, pathM: 2 * depth, minLpm, lpm, dp, lo: dp * 0.9, hi: dp * 1.1 };
+  }
+  function pipeGeom(odMm, sdr) {
+    // wall = od / 11. metres, so the volumes come out in m3
+    const OD = odMm / 1000, t = OD / sdr, ID = Math.max(OD - 2 * t, 0.001);
+    const areaOuter = (Math.PI / 4) * OD * OD;
+    const areaInner = (Math.PI / 4) * ID * ID;
+    return { OD, ID, areaOuter, areaInner, areaWall: areaOuter - areaInner };
+  }
+  function bundleCircles(loopODmm, legs, tremODmm, rebarOn, sdr) {
+    // gap between pipes is 2 x wall. that's how they're fixed in the foot, not butted together
+    const r = loopODmm / 2;
+    const t = loopODmm / sdr;
+    const half = r + t;
+    let positions, tremMid, tremDir, halfDist;
+    if (legs === 2) {
+      positions = [[-half, 0], [half, 0]]; tremMid = [0, 0]; tremDir = [0, -1]; halfDist = half;
+    } else {
+      positions = [[-half, -half], [half, -half], [-half, half], [half, half]];
+      tremMid = [0, -half]; tremDir = [0, -1]; halfDist = half;
+    }
+    const circles = positions.map(([x, y]) => ({ x, y, r, type: "loop" }));
+    function nestedPosition(newR) {
+      // tuck the tremie (or the rebar) up against the pair so it isn't floating in the middle
+      const d = r + newR, dy = Math.sqrt(Math.max(d * d - halfDist * halfDist, 0));
+      return [tremMid[0] + tremDir[0] * dy, tremMid[1] + tremDir[1] * dy];
+    }
+    if (rebarOn) {
+      const pos = nestedPosition(20);
+      circles.push({ x: pos[0], y: pos[1], r: 20, type: "rebar" });
+    }
+    if (tremODmm > 0) {
+      const tr = tremODmm / 2, pos = nestedPosition(tr);
+      circles.push({ x: pos[0], y: pos[1], r: tr, type: "tremie" });
+    }
+    return circles;
+  }
+  function enclosingCenter(circles) {
+    // centre of the smallest circle around the pipes. just for the drawing + the bundle dia
+    if (!circles.length) return { x: 0, y: 0 };
+    let lo = Math.min(...circles.map((c) => c.y - c.r)) - 1;
+    let hi = Math.max(...circles.map((c) => c.y + c.r)) + 1;
+    const R = (k) => Math.max(...circles.map((c) => Math.sqrt(c.x * c.x + (c.y - k) * (c.y - k)) + c.r));
+    for (let i = 0; i < 60; i++) {
+      const m1 = lo + (hi - lo) / 3, m2 = hi - (hi - lo) / 3;
+      if (R(m1) < R(m2)) hi = m2; else lo = m1;
+    }
+    return { x: 0, y: (lo + hi) / 2 };
+  }
+  function minEnclosingDiameter(circles) {
+    const k = enclosingCenter(circles).y;
+    return 2 * Math.max(...circles.map((c) => Math.sqrt(c.x * c.x + (c.y - k) * (c.y - k)) + c.r));
+  }
+  function bundleCentroid(circles) {
+    let sumX = 0, sumY = 0, sumA = 0;
+    for (const c of circles) {
+      const a = Math.PI * c.r * c.r;
+      sumX += c.x * a; sumY += c.y * a; sumA += a;
+    }
+    return { x: sumA > 0 ? sumX / sumA : 0, y: sumA > 0 ? sumY / sumA : 0 };
+  }
+  function footPill(loopODmm, sdr) {
+    // cross section of the foot. wide = 2*od + 4*wall, narrow is half. 50mm sdr11 = 118.2
+    // doesn't go into the grout or the depth, it's only the plan + the clearance
+    const t = loopODmm / sdr;
+    const len = 2 * loopODmm + 4 * t;
+    const wid = len / 2;
+    return { len, wid };
+  }
+  function mgsFootLoadKg(odMm, legs) {
+    const row = MGS_FOOT_LOAD[odMm];
+    if (!row) return null;
+    return row[legs === 4 ? 4 : 2];
+  }
+  function stadiumPath(cx, cy, len, wid) {
+    const r = Math.min(len, wid) / 2;
+    const dx = Math.max(len / 2 - r, 0);
+    return "M " + (cx - dx) + " " + (cy - r) +
+      " H " + (cx + dx) +
+      " A " + r + " " + r + " 0 0 1 " + (cx + dx) + " " + (cy + r) +
+      " H " + (cx - dx) +
+      " A " + r + " " + r + " 0 0 1 " + (cx - dx) + " " + (cy - r) + " Z";
+  }
+  function formatNum(n, d) {
+    if (!Number.isFinite(n)) return "–";
+    return n.toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function metres(n) {
+    const r = Math.round(n * 100) / 100;
+    const d = Number.isInteger(r) ? 0 : (Math.abs(r * 10 - Math.round(r * 10)) < 1e-6 ? 1 : 2);
+    return formatNum(r, d);
+  }
+  const ROD_LENGTHS = [2, 3, 5, 6];
+  function nearestRod(n) {
+    // only those four lengths. a tie goes to the longer rod
+    if (!Number.isFinite(n)) return 3;
+    let best = 3, bestD = Infinity;
+    ROD_LENGTHS.forEach(function (len) {
+      const d = Math.abs(len - n);
+      if (d < bestD || (d === bestD && len > best)) { bestD = d; best = len; }
+    });
+    return best;
+  }
+  function drillPlan(depth, rod) {
+    // typed length is used as-is. slider only offers 2, 3, 5 and 6
+    const len = Number.isFinite(rod) && rod > 0 ? rod : 3;
+    const count = depth > 0 ? Math.ceil(depth / len - 1e-9) : 0;
+    return { len: len, count: count, string: count * len };
+  }
+  function litresLine(siteL, holeL, holes, html) {
+    const total = formatNum(siteL, 0) + " L";
+    if (holes <= 1) return total;
+    const extra = formatNum(holeL, 0) + " L per hole";
+    return html ? total + "  <small>(" + extra + ")</small>" : total + " (" + extra + ")";
+  }
+  function groutMix(volumeM3) {
+    // 5:1 sand:bentonite, 1.59 kg/L, 80 L water to a gauge. bags rounded up
+    const litres = Math.max(volumeM3, 0) * 1000;
+    const mixMass = litres * GROUT_DENSITY_KG_PER_L;
+    const solids = mixMass * PERCENT_SOLIDS;
+    const waterL = mixMass * (1 - PERCENT_SOLIDS);
+    const partI = solids / (1 + SAND_RATIO);
+    const partII = solids * SAND_RATIO / (1 + SAND_RATIO);
+    const partIBags = Math.ceil(partI / BAG_KG);
+    const partIIBags = Math.ceil(partII / BAG_KG);
+    return {
+      waterL,
+      groutOrder: [
+        { label: "Bentonite (Part I)", massKg: partIBags * BAG_KG, bags: partIBags, pallets: Math.ceil(partIBags / BAGS_PER_PALLET) },
+        { label: "Silica Sand (Part II)", massKg: partIIBags * BAG_KG, bags: partIIBags, pallets: Math.ceil(partIIBags / BAGS_PER_PALLET) },
+        { label: "Total (both parts)", massKg: partIBags * BAG_KG + partIIBags * BAG_KG, bags: partIBags + partIIBags, pallets: Math.ceil(partIBags / BAGS_PER_PALLET) + Math.ceil(partIIBags / BAGS_PER_PALLET) }
+      ]
+    };
+  }
+  function compute(raw) {
+    // everything the screen and the pdf read from. keep units: lengths m, areas m2, mass kg
+    const sdr = SDR, depth = Math.max(raw.depth || 0, 0), prefill = raw.prefill;
+    const boreDiaMM = Math.max(raw.boreDiaMM || 0, 1);
+    // entered as g/cm3. 1.1 is the same mud as 1100 kg/m3
+    const mudDens = Math.max(raw.mudDens || 0, 1) * 1000;
+    const rebarOn = raw.rebarOn, tremieOn = raw.tremieOn;
+    const unitOdM = rebarOn ? 0.04 : 0.08, unitLenM = rebarOn ? 3.0 : 1.1, unitMassKg = rebarOn ? 29.6 : 40;
+    const unitArea = (Math.PI / 4) * unitOdM * unitOdM;
+    const legs = 2, loop = pipeGeom(raw.loopOD, sdr);
+    const loopVouter = loop.areaOuter * depth * legs;
+    const loopVwall = loop.areaWall * depth * legs;
+    const loopVinner = loop.areaInner * depth * legs;
+    const buoyLoop = mudDens * loopVouter;
+    const wMatLoop = HDPE_DENS * loopVwall;
+    const wIntLoop = (prefill ? WATER_DENS : 0) * loopVinner;
+    const netLoop = buoyLoop - wMatLoop - wIntLoop;
+    // open tremie floods, so only the wall displaces mud. no fill weight
+    let buoyTrem = 0, wMatTrem = 0, netTrem = 0, tremVwall = 0;
+    if (tremieOn) {
+      const trem = pipeGeom(raw.tremieOD, sdr);
+      tremVwall = trem.areaWall * depth;
+      buoyTrem = mudDens * tremVwall;
+      wMatTrem = HDPE_DENS * tremVwall;
+      netTrem = buoyTrem - wMatTrem;
+    }
+    const netTotal = Math.max(netLoop + netTrem, 0);
+    const buoyancyFactor = Math.max(1 - mudDens / STEEL_DENS, 0.05);
+    const loopWeightMass = netTotal > 0 ? netTotal / buoyancyFactor : 0;
+    const safetyFactor = Math.min(Math.max(raw.safetyFactor || 1.5, 1.0), 2.0);
+    const adjustedMass = loopWeightMass * safetyFactor;
+    const units = netTotal > 0 ? Math.max(Math.ceil(adjustedMass / unitMassKg), 1) : 0;
+    const installedMass = units * unitMassKg, rodLen = units * unitLenM;
+    // rebar is taped up the loop so it doesn't add overdrill. weights do, 1.1m a piece
+    const overdrill = rebarOn ? 0 : rodLen, totalDepth = depth + overdrill, weightVol = unitArea * rodLen;
+    const boreArea = (Math.PI / 4) * Math.pow(boreDiaMM / 1000, 2);
+    const boreVolDesign = boreArea * depth;
+    const pipeDispDesign = loopVouter + tremVwall + (rebarOn ? weightVol : 0);
+    const neatGroutDesign = Math.max(boreVolDesign - pipeDispDesign, 0);
+    const weightDispOverdrill = rebarOn ? 0 : weightVol;
+    const boreVolOverdrill = boreArea * overdrill;
+    const neatGroutOverdrill = Math.max(boreVolOverdrill - weightDispOverdrill, 0);
+    const groutVolume = neatGroutDesign + neatGroutOverdrill;
+    const boreVolTotal = boreVolDesign + boreVolOverdrill;
+    const holes = Math.max(1, Math.floor(raw.holes || 1));
+    // casing void = the ring left when the temp casing comes out. ignore it if the casing isn't bigger than the hole
+    // don't grout past the bottom of the hole if someone types a silly length
+    const casingOn = !!raw.casingOn;
+    const casingOD = casingOn ? (Number(raw.casingOD) === 169 ? 169 : 152) : 0;
+    const casingLen = casingOn ? Math.max(Number(raw.casingLen) || 0, 0) : 0;
+    const casingUsed = Math.min(casingLen, totalDepth);
+    const casingVoid = casingOn
+      ? Math.max(0, (Math.PI / 4) * (Math.pow(casingOD / 1000, 2) - Math.pow(boreDiaMM / 1000, 2))) * casingUsed
+      : 0;
+    const groutWithCasing = groutVolume + casingVoid;
+    const groutSite = groutWithCasing * holes;
+    const mix = groutMix(groutSite);
+    const mixHole = groutMix(groutWithCasing);
+    const fillWaterHole = loop.areaInner * (depth + 5) * legs * 1000;
+    const fillWaterSite = fillWaterHole * holes;
+    const mudFlushHole = Math.max(Number(raw.mudFlush) || 0, 0);
+    const mudFlushSite = mudFlushHole * holes;
+    // loops ordered 5 m longer than the design depth so the tails stay above ground
+    const tremODmm = tremieOn ? raw.tremieOD : 0;
+    const circles = bundleCircles(raw.loopOD, legs, tremODmm, rebarOn, sdr);
+    const bundleDia = minEnclosingDiameter(circles);
+    const centroid = bundleCentroid(circles);
+    const pill = footPill(raw.loopOD, sdr);
+    const footDia = pill.len;
+    const footWid = pill.wid;
+    const governingDia = Math.max(bundleDia, footDia, footWid);
+    // clearance is what's left to the wall. under 20mm i call it tight
+    const clearance = boreDiaMM - governingDia;
+    const clearanceStatus = clearance > 20 ? "ok" : clearance > 0 ? "tight" : "nofit";
+    const footLoadKg = mgsFootLoadKg(raw.loopOD, legs);
+    const footOverload = !rebarOn && footLoadKg != null && installedMass > footLoadKg;
+    const test = loopTest(raw.loopOD, sdr, depth, raw.pumpFlow);
+    return {
+      legs, netLoop, netTrem, netTotal, buoyLoop, buoyTrem, wMatLoop, wMatTrem, wIntLoop,
+      loopWeightMass, safetyFactor, adjustedMass, units, installedMass, rodLen, overdrill,
+      totalDepth, depth, rebarOn, tremieOn, boreDiaMM, loopODmm: raw.loopOD, tremODmm,
+      boreVolTotal, loopVouter, tremVwall, weightDispVol: weightVol, groutVolume: groutWithCasing, groutSite, holes,
+      casingOn, casingOD, casingLen, casingUsed, casingVoid,
+      groutWater: mixHole.waterL, groutWaterSite: mix.waterL,
+      groutGauges: mixHole.waterL / GAUGE_WATER_L,
+      fillWaterHole, fillWaterSite,
+      mudFlushHole, mudFlushSite,
+      groutOrder: mix.groutOrder,
+      circles, centroid, bundleDia, footDia, footWid, governingDia, clearance, eachSide: clearance / 2, clearanceStatus,
+      footLoadKg, footOverload,
+      testMinLpm: test.minLpm, testLpm: test.lpm, testDp: test.dp, testLo: test.lo, testHi: test.hi, testBore: test.boreMm, testPath: test.pathM
+    };
+  }
+
+  function radioVal(name) {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? Number(el.value) : 0;
+  }
+  function readInputs() {
+    return {
+      loopOD: radioVal("loopOD"),
+      depth: Number(document.getElementById("depth").value),
+      prefill: document.getElementById("prefill").checked,
+      tremieOn: document.getElementById("tremieOn").checked,
+      tremieOD: radioVal("tremieOD"),
+      boreDiaMM: Number(document.getElementById("boreDiaMM").value),
+      mudDens: Number(document.getElementById("mudDens").value),
+      safetyFactor: Number(document.getElementById("safetyFactor").value),
+      rebarOn: document.getElementById("rebarOn").checked,
+      casingOn: document.getElementById("casingOn").checked,
+      casingOD: Number(document.getElementById("casingOD").value),
+      casingLen: Number(document.getElementById("casingLen").value),
+      holes: Number(document.getElementById("holes").value),
+      mudFlush: Number(document.getElementById("mudFlush").value),
+      pumpFlow: Number(document.getElementById("pumpFlow").value),
+      drillRod: Number(document.getElementById("drillRod").value) || 3,
+      siteName: document.getElementById("siteName").value.trim()
+    };
+  }
+  function kg(n) { return formatNum(n, 0) + " kg"; }
+  function setHtml(id, html) { document.getElementById(id).innerHTML = html; }
+
+  function render() {
+    // paint the tables, the warning and the svg from whatever's in the inputs right now
+    tunePump(radioVal("loopOD"));
+    const inputs = readInputs();
+    const r = compute(inputs);
+    document.getElementById("tremieField").hidden = !inputs.tremieOn;
+    document.getElementById("tremDispRow").hidden = !r.tremieOn;
+    document.getElementById("boreHint").textContent = "Used in calculations: " + formatNum(inputs.boreDiaMM, 1) + " mm";
+    document.getElementById("wallHint").textContent = "SDR11 - Wall " + formatNum(r.loopODmm / SDR, 2) + " mm (OD ÷ SDR)";
+    setHtml("o-netTotal", formatNum(r.netTotal, 0) + "<small> kgf</small>");
+    setHtml("o-loopWeightMass", formatNum(r.loopWeightMass, 0) + "<small> kg</small>");
+    setHtml("o-adjustedMass", formatNum(r.adjustedMass, 0) + "<small> kg</small>");
+    document.getElementById("l-units").textContent = r.rebarOn ? "Rebar lengths" : "Units";
+    setHtml("o-units", formatNum(r.units, 0) + "<small> × " + (r.rebarOn ? "29.6kg" : "40kg") + "</small>");
+    setHtml("o-installedMass", formatNum(r.installedMass, 0) + "<small> kg</small>");
+    document.getElementById("l-rod").textContent = r.rebarOn ? "Rebar length" : "Stack length";
+    setHtml("o-rodLen", formatNum(r.rodLen, 1) + "<small> m</small>");
+    document.getElementById("o-overdrill").innerHTML = formatNum(r.overdrill, r.overdrill ? 2 : 0) + "<small> m</small>";
+    setHtml("o-totalDepth", formatNum(r.totalDepth, 1) + "<small> m</small>");
+    const rods = drillPlan(r.totalDepth, inputs.drillRod);
+    setHtml("o-drillCount", formatNum(rods.count, 0));
+    setHtml("o-drillString", metres(rods.string) + "<small> m</small>");
+    const footWarn = document.getElementById("footLoadWarn");
+    if (r.footOverload) {
+      footWarn.hidden = false;
+      footWarn.innerHTML = "<b>Exceeds probe foot load</b>" +
+        formatNum(r.installedMass, 0) + " kg installed vs maximum " + formatNum(r.footLoadKg, 0) +
+        " kg for a " + r.loopODmm + " mm single loop (dry-string rating). Reduce the stack, lower the sink margin, or use rebar taped along the loop.";
+    } else {
+      footWarn.hidden = true;
+      footWarn.innerHTML = "";
+    }
+    const dash = "—";
+    document.getElementById("forceRows").innerHTML = [
+      ["Buoyant force (up)", kg(r.buoyLoop), r.tremieOn ? kg(r.buoyTrem) : dash, kg(r.buoyLoop + r.buoyTrem), false],
+      ["Pipe material weight (down)", kg(r.wMatLoop), r.tremieOn ? kg(r.wMatTrem) : dash, kg(r.wMatLoop + r.wMatTrem), false],
+      ["Internal fill weight (down)", kg(r.wIntLoop), r.tremieOn ? kg(0) : dash, kg(r.wIntLoop), false],
+      ["Net upward force", kg(r.netLoop), r.tremieOn ? kg(r.netTrem) : dash, kg(r.netLoop + r.netTrem), true]
+    ].map(([a,b,c,d,last]) => "<tr class='" + (last ? "last" : "") + "'><td>" + a + "</td><td>" + b + "</td><td>" + c + "</td><td>" + d + "</td></tr>").join("");
+    document.getElementById("sfLabel").textContent = r.safetyFactor.toFixed(2) + "×";
+    setHtml("o-boreVolTotal", formatNum(r.boreVolTotal, 3) + "<small> m³</small>");
+    setHtml("o-loopVouter", "−" + formatNum(r.loopVouter, 3) + "<small> m³</small>");
+    setHtml("o-tremVwall", "−" + formatNum(r.tremVwall, 3) + "<small> m³</small>");
+    document.getElementById("l-wdisp").textContent = (r.rebarOn ? "Rebar" : "Loop weight") + " displacement";
+    setHtml("o-weightDispVol", "−" + formatNum(r.weightDispVol, 3) + "<small> m³</small>");
+    const casingRow = document.getElementById("casingVoidRow");
+    document.getElementById("casingFields").hidden = !r.casingOn;
+    casingRow.hidden = !r.casingOn;
+    if (r.casingOn) {
+      const cap = r.casingLen > r.totalDepth + 1e-9 ? " <small>(limited to hole depth)</small>" : "";
+      setHtml("o-casingVoid", "+" + formatNum(r.casingVoid, 3) + "<small> m³</small>" + cap);
+    }
+    setHtml("o-groutVolume", formatNum(r.groutVolume, 3) + "<small> m³</small>");
+    setHtml("o-groutWater", formatNum(r.groutWater, 0) + "<small> L</small>");
+    setHtml("o-groutGauges", formatNum(r.groutGauges, 1));
+    setHtml("t-flow", formatNum(r.testMinLpm, 1) + "<small> L/min</small>");
+    setHtml("t-dp", formatNum(r.testDp, 2) + "<small> bar</small>");
+    setHtml("t-band", formatNum(r.testLo, 2) + " – " + formatNum(r.testHi, 2) + "<small> bar</small>");
+    const slideMin = Math.ceil(r.testMinLpm - 1e-6);
+    const pumpSlide = document.getElementById("pumpFlowSlide");
+    pumpSlide.min = String(slideMin);
+    pumpSlide.max = "150";
+    const pv = Number(document.getElementById("pumpFlow").value);
+    if (Number.isFinite(pv)) pumpSlide.value = String(Math.min(150, Math.max(slideMin, pv)));
+    document.getElementById("pumpTickMin").textContent = String(slideMin);
+    document.getElementById("t-note").textContent =
+      r.loopODmm + " mm SDR 11, bore " + formatNum(r.testBore, 1) + " mm. Flow path " + formatNum(r.testPath, 0) +
+      " m, down and back. Pressure drop is at the pump flow, which starts on the next 5 L/min above 0.6 m/s.";
+    const sdrLabel = "11";
+    const cfg = r.legs === 4 ? "double" : "single";
+    const holes = r.holes;
+    const unitKg = r.rebarOn ? "29.6 kg" : "40 kg";
+    const weightName = r.rebarOn ? "Rebar" : "Modular weights";
+    const loopOrder = r.depth + 5;
+    const loopLine = formatNum(holes, 0) + " × " + cfg + ", " + r.loopODmm + " mm SDR " + sdrLabel + ", " + formatNum(loopOrder, 0) + " m";
+    const tremLine = r.tremieOn
+      ? formatNum(holes, 0) + " × " + r.tremODmm + " mm SDR " + sdrLabel + ", " + formatNum(r.depth, 0) + " m"
+      : "None";
+    const weightLine = formatNum(r.units * holes, 0) + " × " + unitKg + "  <small>(" + formatNum(r.units, 0) + " per hole)</small>";
+    const mat = [
+      ["Loops", loopLine, false],
+      ["Tremies", tremLine, false],
+      [weightName, weightLine, false],
+      ["Grout volume", formatNum(r.groutSite, 3) + " m³  <small>(" + formatNum(r.groutVolume, 3) + " m³ per hole)</small>", false]
+    ];
+    if (r.casingOn) {
+      const name = r.casingOD === 169 ? "WW" : "WE";
+      mat.splice(3, 0, ["Casing", formatNum(holes, 0) + " × " + name + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m", false]);
+    }
+    r.groutOrder.forEach(function (row) {
+      mat.push([row.label, formatNum(row.massKg, 0) + " kg  ·  " + formatNum(row.bags, 0) + (row.bags === 1 ? " bag" : " bags") + "  ·  " + formatNum(row.pallets, 0) + (row.pallets === 1 ? " pallet" : " pallets"), false]);
+    });
+    mat.push(["Loop fill water", litresLine(r.fillWaterSite, r.fillWaterHole, holes, true), false]);
+    mat.push(["Grout mix water", litresLine(r.groutWaterSite, r.groutWater, holes, true), false]);
+    mat.push(["Mud flush water", litresLine(r.mudFlushSite, r.mudFlushHole, holes, true), false]);
+    mat.push(["Total water", formatNum(r.fillWaterSite + r.groutWaterSite + r.mudFlushSite, 0) + " L", true]);
+    document.getElementById("matRows").innerHTML = mat.map(function (row) {
+      return "<tr class='" + (row[2] ? "last" : "") + "'><td>" + row[0] + "</td><td>" + row[1] + "</td></tr>";
+    }).join("");
+    const boreOpt = document.getElementById("boreDiaMM").selectedOptions[0];
+    const boreLabel = boreOpt ? boreOpt.textContent : formatNum(r.boreDiaMM, 1) + " mm";
+    const key = [
+      ["Site", inputs.siteName || "—"],
+      ["Boreholes", formatNum(holes, 0)],
+      ["Loop", r.loopODmm + " mm · " + cfg + " · SDR " + sdrLabel + (inputs.prefill ? " · water-filled" : "")],
+      ["Tremie", r.tremieOn ? r.tremODmm + " mm open" : "None"],
+      ["Borehole", boreLabel],
+    ].concat(r.casingOn ? [["Casing", (r.casingOD === 169 ? "WW" : "WE") + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]] : []).concat([
+      ["Target mud weight", formatNum(inputs.mudDens, 2) + " g/cm³"],
+      ["Over-drill", formatNum(r.overdrill, r.overdrill ? 2 : 0) + " m"],
+      ["Clearance", formatNum(r.clearance, 0) + " mm · " + (r.clearanceStatus === "ok" ? "workable" : r.clearanceStatus === "tight" ? "tight" : "does not fit")]
+    ]);
+    document.getElementById("keyRows").innerHTML = key.map(function (row, i) {
+      return "<tr class='" + (i === key.length - 1 ? "last" : "") + "'><td>" + row[0] + "</td><td>" + row[1] + "</td></tr>";
+    }).join("");
+    document.getElementById("printSite").textContent = inputs.siteName;
+
+    const size = 220, cx = 110, cy = 110, margin = 16, scale = (size - margin * 2) / r.boreDiaMM, boreR = (r.boreDiaMM / 2) * scale;
+    const svg = document.getElementById("section");
+    let svgHtml = '<circle cx="' + cx + '" cy="' + cy + '" r="' + boreR + '" fill="var(--mud)" opacity="0.28"/>';
+    svgHtml += '<circle cx="' + cx + '" cy="' + cy + '" r="' + boreR + '" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 3"/>';
+    const vis = r.circles.filter(function (c) { return c.type !== "rebar"; });
+    const mid = enclosingCenter(vis.length ? vis : r.circles);
+    const loopOnly = r.circles.filter(function (c) { return c.type === "loop"; });
+    const footMid = enclosingCenter(loopOnly.length ? loopOnly : r.circles);
+    const fx = cx + (footMid.x - mid.x) * scale;
+    const fy = cy + (footMid.y - mid.y) * scale;
+    svgHtml += '<path d="' + stadiumPath(fx, fy, r.footDia * scale, r.footWid * scale) + '" fill="#111" stroke="#111" stroke-width="0.6"/>';
+    r.circles.forEach(function (c) {
+      const px = cx + (c.x - mid.x) * scale;
+      const py = cy + (c.y - mid.y) * scale;
+      const pr = c.r * scale;
+      const fill = c.type === "tremie" ? "var(--accent)" : c.type === "rebar" ? "var(--muted)" : "var(--pipe)";
+      svgHtml += '<circle cx="' + px + '" cy="' + py + '" r="' + pr + '" fill="' + fill + '" stroke="var(--pipe-stroke)" stroke-width="1.5" opacity="' + (c.type === "tremie" ? "0.9" : "1") + '"/>';
+    });
+    svg.innerHTML = svgHtml;
+    svg.setAttribute("aria-label", "Borehole cross-section, " + formatNum(r.boreDiaMM, 1) + " millimetres");
+    let legend = '<div><span class="sw" style="background:var(--pipe)"></span>Loop pipes — ' + r.loopODmm + " mm OD × " + r.legs + "</div>";
+    if (r.rebarOn) legend += '<div><span class="sw" style="background:var(--muted)"></span>Rebar — 40 mm OD</div>';
+    if (r.tremODmm > 0) legend += '<div><span class="sw" style="background:var(--accent)"></span>Tremie — ' + r.tremODmm + " mm OD</div>";
+    legend += '<div><span class="sw" style="border:1px dashed var(--line);background:transparent"></span>Borehole — ' + formatNum(r.boreDiaMM, 1) + " mm</div>";
+    legend += '<div><span class="sw" style="background:#111;border-radius:999px"></span>Probe foot — ' + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm</div>";
+    document.getElementById("legend").innerHTML = legend;
+
+    const banner = document.getElementById("clearance");
+    const ok = r.clearanceStatus === "ok";
+    banner.className = "banner " + (ok ? "ok" : "bad");
+    let title, body;
+    const footGoverns = r.footDia >= r.bundleDia;
+    const wideName = footGoverns ? "Probe foot" : "Bundle";
+    const wideMm = footGoverns ? r.footDia : r.bundleDia;
+    const wideDec = footGoverns ? 1 : 0;
+    if (r.clearanceStatus === "nofit") {
+      title = wideName + " does not fit";
+      body = wideName + " Ø " + formatNum(wideMm, wideDec) + " mm exceeds the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or reduce pipe count/size.";
+    } else if (r.clearanceStatus === "tight") {
+      title = "Tight clearance";
+      body = wideName + " Ø " + formatNum(wideMm, wideDec) + " mm, leaving only ≈" + formatNum(r.clearance, 0) + " mm total (≈" + formatNum(r.eachSide, 0) + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
+    } else {
+      title = "Clearance looks workable";
+      body = "Bundle ≈" + formatNum(r.bundleDia, 0) + " mm, probe foot " + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm, leaving ≈" + formatNum(r.clearance, 0) + " mm total (≈" + formatNum(r.eachSide, 0) + " mm each side) against the borehole wall.";
+    }
+    banner.innerHTML = "<b>" + title + "</b>" + body;
+  }
+
+  document.querySelector(".wrap").addEventListener("change", render);
+  document.querySelector(".wrap").addEventListener("input", render);
+
+  let pumpOd = null;
+  function tunePump(od) {
+    // new pipe size picks a fresh default, unless you've already set a flow that still clears 0.6 m/s
+    const pump = document.getElementById("pumpFlow");
+    const D = (od - 2 * (od / SDR)) / 1000;
+    const minLpm = 0.6 * (Math.PI / 4) * D * D * 60000;
+    const def = Math.ceil((minLpm - 1e-6) / 5) * 5;
+    pump.dataset.minlpm = String(minLpm);
+    if (pumpOd !== od) {
+      pumpOd = od;
+      const cur = Number(pump.value);
+      if (pump.dataset.touched !== "1" || !Number.isFinite(cur) || cur < minLpm) pump.value = String(def);
+    }
+  }
+  const pump = document.getElementById("pumpFlow");
+  const pumpSlide = document.getElementById("pumpFlowSlide");
+  pumpSlide.addEventListener("input", function () {
+    pump.dataset.touched = "1";
+    pump.value = pumpSlide.value;
+  });
+  pump.addEventListener("input", function () {
+    pump.dataset.touched = "1";
+  });
+  pump.addEventListener("change", function () {
+    pump.dataset.touched = "1";
+    const minLpm = Number(pump.dataset.minlpm) || 0;
+    let v = Number(pump.value);
+    if (!Number.isFinite(v) || v < minLpm) v = minLpm;
+    pump.value = String(Math.round(v * 10) / 10);
+  });
+
+  function bindSlide(numId, slideId, min, max) {
+    // slider has a top end. the number box can go higher, just not below min
+    const num = document.getElementById(numId);
+    const slide = document.getElementById(slideId);
+    function toNum(v) {
+      v = Number(v);
+      return Number.isFinite(v) ? v : Number(slide.value);
+    }
+    function syncSlide(v) {
+      slide.value = String(Math.min(max, Math.max(min, v)));
+    }
+    slide.addEventListener("input", function () { num.value = slide.value; });
+    num.addEventListener("input", function () {
+      const v = Number(num.value);
+      if (Number.isFinite(v)) syncSlide(v);
+    });
+    num.addEventListener("change", function () {
+      const v = Math.max(min, toNum(num.value));
+      num.value = String(v);
+      syncSlide(v);
+    });
+  }
+  bindSlide("depth", "depthSlide", 1, 500);
+  bindSlide("mudDens", "mudDensSlide", 1, 1.4);
+  bindSlide("holes", "holesSlide", 1, 200);
+  bindSlide("casingLen", "casingLenSlide", 0, 200);
+  bindSlide("mudFlush", "mudFlushSlide", 0, 100000);
+
+  const drillRod = document.getElementById("drillRod");
+  const drillSlide = document.getElementById("drillRodSlide");
+  drillSlide.addEventListener("input", function () {
+    drillRod.value = String(ROD_LENGTHS[Number(drillSlide.value)] || 3);
+  });
+  drillRod.addEventListener("input", function () {
+    const n = Number(drillRod.value);
+    if (Number.isFinite(n)) drillSlide.value = String(Math.max(0, ROD_LENGTHS.indexOf(nearestRod(n))));
+  });
+  drillRod.addEventListener("change", function () {
+    let n = Number(drillRod.value);
+    if (!Number.isFinite(n) || n <= 0) n = 3;
+    drillRod.value = String(n);
+    drillSlide.value = String(ROD_LENGTHS.indexOf(nearestRod(n)));
+  });
+
+  const menu = document.getElementById("menu");
+  const btnGear = document.getElementById("btnGear");
+  btnGear.addEventListener("click", function (e) {
+    e.stopPropagation();
+    const open = menu.hidden;
+    menu.hidden = !open;
+    btnGear.setAttribute("aria-expanded", open ? "true" : "false");
+    btnGear.setAttribute("aria-label", open ? "Close tools" : "Open tools");
+  });
+  document.addEventListener("pointerdown", function (e) {
+    if (!menu.hidden && !document.querySelector(".head-tools").contains(e.target)) {
+      menu.hidden = true;
+      btnGear.setAttribute("aria-expanded", "false");
+    }
+  });
+  function themeNow() { return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark"; }
+  function paintTheme() {
+    const t = themeNow();
+    document.getElementById("themeLabel").textContent = t === "dark" ? "Dark" : "Light";
+    document.getElementById("themeIcon").innerHTML = t === "dark"
+      ? '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+  }
+  document.getElementById("btnTheme").addEventListener("click", function () {
+    const next = themeNow() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("gshp-theme-pref", next); } catch (e) {}
+    paintTheme();
+  });
+  function ascii(s) {
+    // helvetica in the pdf has no m³ or times sign. strip the html too
+    return String(s)
+      .replace(/m³/g, "m3")
+      .replace(/kg\/m³/g, "kg/m3")
+      .replace(/×/g, "x")
+      .replace(/·/g, "-")
+      .replace(/[—–]/g, "-")
+      .replace(/≈/g, "~")
+      .replace(/<[^>]+>/g, " ");
+  }
+  function pdfFileName(site) {
+    // blank site name -> a generic filename, otherwise the site
+    const raw = (site || "").trim().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+    return (raw || "GSHP job sheet") + ".pdf";
+  }
+  function buildPdfBlob() {
+    // job sheet. a4, orange header, key figures at the bottom of the list in orange
+    // coordinates are mm from the top-left, then flipped because pdf y goes up
+    const inputs = readInputs();
+    const r = compute(inputs);
+    const sdrLabel = "11";
+    const cfg = r.legs === 4 ? "double" : "single";
+    const holes = r.holes;
+    const unitKg = r.rebarOn ? "29.6 kg" : "40 kg";
+    const weightName = r.rebarOn ? "Rebar" : "Modular weights";
+    const loopOrder = r.depth + 5;
+    const boreOpt = document.getElementById("boreDiaMM").selectedOptions[0];
+    const boreLabel = boreOpt ? boreOpt.textContent : formatNum(r.boreDiaMM, 1) + " mm";
+    const loopLine = formatNum(holes, 0) + " x " + cfg + ", " + r.loopODmm + " mm SDR " + sdrLabel + ", " + formatNum(loopOrder, 0) + " m";
+    const tremLine = r.tremieOn
+      ? formatNum(holes, 0) + " x " + r.tremODmm + " mm SDR " + sdrLabel + ", " + formatNum(r.depth, 0) + " m"
+      : "None";
+    const weightLine = formatNum(r.units * holes, 0) + " x " + unitKg + " (" + formatNum(r.units, 0) + " per hole)";
+
+    const PT = 72 / 25.4;
+    const PW = 210 * PT, PH = 297 * PT;
+    const ops = [];
+    function n(v) { return (Math.round(v * 100) / 100).toFixed(2); }
+    function rgb(c, fill) {
+      ops.push((c[0] / 255).toFixed(3) + " " + (c[1] / 255).toFixed(3) + " " + (c[2] / 255).toFixed(3) + (fill ? " rg" : " RG"));
+    }
+    function X(mm) { return mm * PT; }
+    function Y(mm) { return PH - mm * PT; }
+    function rect(x, y, w, h, fill) {
+      ops.push(n(X(x)) + " " + n(Y(y + h)) + " " + n(w * PT) + " " + n(h * PT) + " re " + (fill ? "f" : "S"));
+    }
+    function line(x1, y1, x2, y2) {
+      ops.push(n(X(x1)) + " " + n(Y(y1)) + " m " + n(X(x2)) + " " + n(Y(y2)) + " l S");
+    }
+    function circle(cx, cy, r, mode) {
+      const k = 0.5522847498 * r;
+      const px = X(cx), py = Y(cy), pr = r * PT, pk = k * PT;
+      ops.push(
+        n(px + pr) + " " + n(py) + " m " +
+        n(px + pr) + " " + n(py + pk) + " " + n(px + pk) + " " + n(py + pr) + " " + n(px) + " " + n(py + pr) + " c " +
+        n(px - pk) + " " + n(py + pr) + " " + n(px - pr) + " " + n(py + pk) + " " + n(px - pr) + " " + n(py) + " c " +
+        n(px - pr) + " " + n(py - pk) + " " + n(px - pk) + " " + n(py - pr) + " " + n(px) + " " + n(py - pr) + " c " +
+        n(px + pk) + " " + n(py - pr) + " " + n(px + pr) + " " + n(py - pk) + " " + n(px + pr) + " " + n(py) + " c " +
+        mode
+      );
+    }
+    function stadium(cx, cy, len, wid, mode) {
+      const rad = Math.min(len, wid) / 2;
+      const dx = Math.max(len / 2 - rad, 0);
+      const k = 0.5522847498 * rad;
+      function P(x, y) { return n(X(x)) + " " + n(Y(y)); }
+      const lx = cx - dx, rx = cx + dx, t = cy - rad, b = cy + rad;
+      ops.push(
+        P(lx, t) + " m " + P(rx, t) + " l " +
+        P(rx + k, t) + " " + P(rx + rad, cy - k) + " " + P(rx + rad, cy) + " c " +
+        P(rx + rad, cy + k) + " " + P(rx + k, b) + " " + P(rx, b) + " c " +
+        P(lx, b) + " l " +
+        P(lx - k, b) + " " + P(lx - rad, cy + k) + " " + P(lx - rad, cy) + " c " +
+        P(lx - rad, cy - k) + " " + P(lx - k, t) + " " + P(lx, t) + " c " +
+        mode
+      );
+    }
+    function text(str, x, y, sizePt, font) {
+      const s = ascii(str).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+      ops.push("BT /" + font + " " + sizePt + " Tf 1 0 0 1 " + n(X(x)) + " " + n(Y(y)) + " Tm (" + s + ") Tj ET");
+    }
+    function wrap(str, maxMm, sizePt) {
+      const maxChars = Math.max(10, Math.floor(maxMm / (sizePt * 0.16)));
+      const words = ascii(str).split(/\s+/);
+      const lines = [];
+      let cur = "";
+      words.forEach(function (w) {
+        const next = cur ? cur + " " + w : w;
+        if (next.length > maxChars && cur) { lines.push(cur); cur = w; }
+        else cur = next;
+      });
+      if (cur) lines.push(cur);
+      return lines.length ? lines : [""];
+    }
+
+    const INK = [28, 29, 31], MUTED = [90, 92, 95], ORANGE = [232, 87, 15];
+    const LEFT = 16;
+    rgb([255, 255, 255], true);
+    rect(0, 0, 210, 297, true);
+    rgb(ORANGE, true);
+    rect(0, 0, 210, 3.2, true);
+    rgb(INK, true);
+    text("GSHP BOREHOLE CALCULATOR", LEFT, 14, 15, "F2");
+    rgb(MUTED, true);
+    const sub = (inputs.siteName ? inputs.siteName + "  -  " : "") +
+      new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+    text(sub, LEFT, 20, 9, "F1");
+
+    let y = 30;
+    function heading(label) {
+      rgb(ORANGE, true);
+      text(label.toUpperCase(), LEFT, y, 9, "F2");
+      y += 2;
+      rgb(ORANGE, false);
+      ops.push("0.35 w");
+      line(LEFT, y, 194, y);
+      y += 6;
+    }
+    function pair(x, valueW, yy, label, value, hi) {
+      rgb(hi ? ORANGE : MUTED, true);
+      text(label, x, yy, 8.5, hi ? "F2" : "F1");
+      rgb(hi ? ORANGE : INK, true);
+      const lines = wrap(value, valueW, 8.5);
+      lines.forEach(function (ln, i) { text(ln, x + 52, yy + i * 4, 8.5, hi ? "F2" : "F1"); });
+      return yy + Math.max(5.2, lines.length * 4);
+    }
+
+    const rods = drillPlan(r.totalDepth, inputs.drillRod);
+    heading("Key data");
+    const keyY0 = y;
+    const key = [
+      ["Site", inputs.siteName || "-"],
+      ["Boreholes", formatNum(holes, 0)],
+      ["Loop", r.loopODmm + " mm, " + cfg + ", SDR " + sdrLabel + (inputs.prefill ? ", water-filled" : "")],
+      ["Tremie", r.tremieOn ? r.tremODmm + " mm open" : "None"],
+      ["Borehole", boreLabel],
+    ].concat(r.casingOn ? [["Casing", (r.casingOD === 169 ? "WW" : "WE") + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]] : []).concat([
+      ["Target mud weight", formatNum(inputs.mudDens, 2) + " g/cm3"],
+      ["Over-drill", formatNum(r.overdrill, r.overdrill ? 2 : 0) + " m"],
+      ["Clearance", formatNum(r.clearance, 0) + " mm, " + (r.clearanceStatus === "ok" ? "workable" : r.clearanceStatus === "tight" ? "tight" : "does not fit")],
+      ["Sink margin", r.safetyFactor.toFixed(2) + "x", true],
+      ["Recommended weight", formatNum(r.installedMass, 0) + " kg (" + formatNum(r.units, 0) + " x " + unitKg + ")" + (r.footOverload ? " - OVER FOOT LOAD" : ""), true],
+      ["Design depth", formatNum(r.depth, 0) + " m", true],
+      ["Required borehole depth", formatNum(r.totalDepth, 1) + " m", true],
+      ["Rod length", metres(rods.len) + " m"],
+      ["Rod count", formatNum(rods.count, 0)],
+      ["String length", metres(rods.string) + " m", true],
+      ["Grout volume (per hole)", formatNum(r.groutVolume, 3) + " m3 (" + formatNum(r.groutGauges, 1) + " gauges)", true],
+      ["Number of gauges", formatNum(r.groutGauges, 1), true]
+    ]);
+    let ky = y;
+    key.forEach(function (row) { ky = pair(LEFT, 70, ky, row[0], row[1], row[2]); });
+
+    const box = 58, dx = 136, dy = keyY0 - 1;
+    rgb([245, 242, 236], true);
+    rect(dx, dy, box, box, true);
+    const cx = dx + box / 2, cy = dy + box / 2;
+    const scale = (box - 8) / r.boreDiaMM;
+    const boreR = (r.boreDiaMM / 2) * scale;
+    rgb([196, 180, 154], true);
+    circle(cx, cy, boreR, "f");
+    rgb([150, 150, 150], false);
+    ops.push("0.35 w");
+    circle(cx, cy, boreR, "S");
+    const vis = r.circles.filter(function (c) { return c.type !== "rebar"; });
+    const mid = enclosingCenter(vis.length ? vis : r.circles);
+    const loopOnly = r.circles.filter(function (c) { return c.type === "loop"; });
+    const footMid = enclosingCenter(loopOnly.length ? loopOnly : r.circles);
+    const fx = cx + (footMid.x - mid.x) * scale;
+    const fy = cy + (footMid.y - mid.y) * scale;
+    rgb([17, 17, 17], true);
+    stadium(fx, fy, r.footDia * scale, r.footWid * scale, "f");
+    r.circles.forEach(function (c) {
+      const px = cx + (c.x - mid.x) * scale;
+      const py = cy + (c.y - mid.y) * scale;
+      const pr = Math.max(c.r * scale, 0.6);
+      if (c.type === "tremie") rgb([232, 87, 15], true);
+      else if (c.type === "rebar") rgb([120, 122, 125], true);
+      else rgb([180, 176, 170], true);
+      rgb([28, 29, 31], false);
+      ops.push("0.25 w");
+      circle(px, py, pr, "B");
+    });
+    let ly = dy + box + 6;
+    function swatch(color, label) {
+      rgb(color, true);
+      circle(dx + 2, ly - 0.8, 1.2, "f");
+      rgb(INK, true);
+      text(label, dx + 5.5, ly, 7.5, "F1");
+      ly += 4;
+    }
+    swatch([180, 176, 170], "Loop " + r.loopODmm + " mm x " + r.legs);
+    if (r.rebarOn) swatch([120, 122, 125], "Rebar 40 mm");
+    if (r.tremODmm > 0) swatch([232, 87, 15], "Tremie " + r.tremODmm + " mm");
+    swatch([196, 180, 154], "Borehole " + formatNum(r.boreDiaMM, 1) + " mm");
+    swatch([28, 29, 31], "Probe foot " + formatNum(r.footDia, 1) + " x " + formatNum(r.footWid, 1) + " mm");
+
+    y = Math.max(ky, ly) + 6;
+    heading("Testing parameters");
+    [
+      ["Min purge / flow test", formatNum(r.testMinLpm, 1) + " L/min", true],
+      ["Actual pump flow", formatNum(r.testLpm, 1) + " L/min", true],
+      ["Expected pressure drop", formatNum(r.testDp, 2) + " bar", true],
+      ["Pass window", formatNum(r.testLo, 2) + " - " + formatNum(r.testHi, 2) + " bar", true]
+    ].forEach(function (row) { y = pair(LEFT, 120, y, row[0], row[1], row[2]); });
+    y += 1.5;
+    function para(str) {
+      rgb(INK, true);
+      wrap(str, 175, 8).forEach(function (ln) {
+        text(ln, LEFT, y, 8, "F1");
+        y += 3.6;
+      });
+    }
+    para("Purge / flow test. Mains water only, at or above the flow above, until the sight glass is a solid clear stream. Then at least 20 minutes, and a 100-200 um bag stays empty for 10 minutes. At a steady flow the pressure-drop differential must sit inside the pass window. High means air or a pinch/kink. Low means a bypass.");
+    y += 1.2;
+    para("Pressure test. Rest at 0 bar for 60 min. Raise to 6.0 bar in under 10 min and hold for 30 min. Isolate. After 60 min, P60 must be at least 4.2 bar. Bleed 10-15% (6.0 bar goes to 5.1) and isolate for 30 min. Pass if the needle rises or stays still.");
+    y += 6;
+    heading("Materials list");
+    const mat = [
+      ["Loops", loopLine],
+      ["Tremies", tremLine],
+      [weightName, weightLine],
+      ["Grout volume", formatNum(r.groutSite, 3) + " m3 (" + formatNum(r.groutVolume, 3) + " m3 per hole)"]
+    ];
+    if (r.casingOn) {
+      const name = r.casingOD === 169 ? "WW" : "WE";
+      mat.splice(3, 0, ["Casing", formatNum(holes, 0) + " x " + name + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]);
+    }
+    r.groutOrder.forEach(function (row) {
+      mat.push([row.label, formatNum(row.massKg, 0) + " kg, " + formatNum(row.bags, 0) + (row.bags === 1 ? " bag, " : " bags, ") + formatNum(row.pallets, 0) + (row.pallets === 1 ? " pallet" : " pallets")]);
+    });
+    mat.push(["Loop fill water", litresLine(r.fillWaterSite, r.fillWaterHole, holes, false)]);
+    mat.push(["Grout mix water", litresLine(r.groutWaterSite, r.groutWater, holes, false)]);
+    mat.push(["Mud flush water", litresLine(r.mudFlushSite, r.mudFlushHole, holes, false)]);
+    mat.push(["Total water", formatNum(r.fillWaterSite + r.groutWaterSite + r.mudFlushSite, 0) + " L"]);
+    mat.forEach(function (row) { y = pair(LEFT, 130, y, row[0], row[1]); });
+    y += 8;
+    rgb(INK, true);
+    text("Calculator by Dylan Burns", LEFT, y, 8, "F3");
+
+    const stream = ops.join("\n");
+    function obj(id, body) { return id + " 0 obj\n" + body + "\nendobj\n"; }
+    const parts = [];
+    parts.push("%PDF-1.4\n");
+    const bodies = [
+      obj(1, "<< /Type /Catalog /Pages 2 0 R >>"),
+      obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+      obj(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + n(PW) + " " + n(PH) + "] /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >> >> /Contents 4 0 R >>"),
+      obj(4, "<< /Length " + stream.length + " >>\nstream\n" + stream + "\nendstream"),
+      obj(5, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"),
+      obj(6, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"),
+      obj(7, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >>")
+    ];
+    const xref = [0];
+    let offset = parts[0].length;
+    bodies.forEach(function (b) { xref.push(offset); parts.push(b); offset += b.length; });
+    const xrefStart = offset;
+    let xrefTable = "xref\n0 8\n0000000000 65535 f \n";
+    for (let i = 1; i < xref.length; i++) xrefTable += String(xref[i]).padStart(10, "0") + " 00000 n \n";
+    parts.push(xrefTable);
+    parts.push("trailer\n<< /Size 8 /Root 1 0 R >>\nstartxref\n" + xrefStart + "\n%%EOF");
+    return new Blob(parts, { type: "application/pdf" });
+  }
+  function isStandalone() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+  function downloadPdf(blob, filename) {
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(href); }, 4000);
+  }
+  function exportPdf() {
+    // desktop: straight download. iphone opens a pdf in the tab if you use <a download>,
+    // so hand it the share sheet and they can save to files
+    menu.hidden = true;
+    const filename = pdfFileName(readInputs().siteName);
+    const blob = buildPdfBlob();
+    const file = new File([blob], filename, { type: "application/pdf" });
+    if (isIOS() && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: filename }).catch(function () {});
+      return;
+    }
+    downloadPdf(blob, filename);
+  }
+  document.getElementById("btnPdf").addEventListener("click", exportPdf);
+  document.getElementById("btnPdfList").addEventListener("click", exportPdf);
+  let deferredPrompt = null;
+  const btnInstall = document.getElementById("btnInstall");
+  const installOverlay = document.getElementById("installOverlay");
+  function hideInstall() {
+    btnInstall.hidden = true;
+  }
+  if (isStandalone()) hideInstall();
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstall.hidden = false;
+  });
+  window.addEventListener("appinstalled", hideInstall);
+  btnInstall.addEventListener("click", async function () {
+    menu.hidden = true;
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      try { await deferredPrompt.userChoice; } catch (e) {}
+      deferredPrompt = null;
+      return;
+    }
+    const hint = document.getElementById("installHint");
+    const steps = document.getElementById("installSteps");
+    if (isIOS()) {
+      hint.textContent = "Safari can’t be prompted from a button — add it from Share.";
+      steps.innerHTML = "<li>Open this page in Safari.</li><li>Tap the Share button.</li><li>Tap <b>Add to Home Screen</b>, then Add.</li>";
+    } else {
+      hint.textContent = "Install from your browser menu if the prompt doesn’t appear.";
+      steps.innerHTML = "<li>Open the browser menu (⋮ or Share).</li><li>Tap <b>Install app</b> or <b>Add to Home Screen</b>.</li><li>Use the orange calculator icon on the home screen.</li>";
+    }
+    installOverlay.hidden = false;
+  });
+  document.getElementById("btnCloseInstall").addEventListener("click", function () {
+    installOverlay.hidden = true;
+  });
+  if ("serviceWorker" in navigator) {
+    // used to register sw.js for offline. browsers won't run that from inside this file,
+    // and a leftover one was 404ing the home screen shortcut. drop any old registration.
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (reg) { reg.unregister(); });
+    }).catch(function () {});
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      menu.hidden = true;
+      installOverlay.hidden = true;
+    }
+  });
+  paintTheme();
+  render();
+})();
+</script>
+</body>
+</html>
