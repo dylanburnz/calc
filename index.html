@@ -499,7 +499,7 @@ table.spaced td { border-bottom: 0; }
           <tbody id="forceRows"></tbody>
         </table>
         <div class="hr"></div>
-        <!-- rebar is taped to the loop, so no overdrill. modular weights stack under the foot -->
+        <!-- rebar is taped to the loop, so no overdrill. modular weights stack under the U Bend -->
         <label class="check"><input type="checkbox" id="rebarOn"> Use rebar instead of modular weights</label>
         <p class="hint">40mm × 3m, ≈29.6kg each.</p>
         <div class="sink">
@@ -535,7 +535,7 @@ table.spaced td { border-bottom: 0; }
           </div>
         <div class="hr print-hide"></div>
         <div class="plan">
-          <!-- empty until render() draws the borehole, pipes, tremie and the foot -->
+          <!-- empty until render() draws the borehole, pipes, tremie and the U Bend -->
           <svg id="section" viewBox="0 0 220 220" role="img" aria-label="Borehole cross-section"></svg>
           <div>
             <p style="font-family:var(--font-display);font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin:0 0 .4rem">Cross section</p>
@@ -543,7 +543,7 @@ table.spaced td { border-bottom: 0; }
           </div>
         </div>
         <div class="banner print-hide" id="clearance"></div>
-        <!-- green if there's room, red if the bundle or the foot is tight or won't fit -->
+        <!-- green if there's room, red if the bundle or the U Bend is tight or won't fit -->
       </section>
 
 <section class="panel panel-rods print-hide">
@@ -600,11 +600,11 @@ table.spaced td { border-bottom: 0; }
   </div>
 
   <section class="panel print-hide" id="testPanel">
-    <!-- purge flow, pressure drop, short steps, and the full pressure-test guide behind the dropdown -->
+    <!-- purge flow, friction loss, short steps, and the full pressure-test guide behind the dropdown -->
     <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19a8 8 0 1 1 14 0"/><circle cx="12" cy="13" r="1.6" fill="currentColor" stroke="none"/><path d="M12 13 16.2 9"/></svg></span>Testing parameters</h2>
     <table class="spaced">
       <tbody>
-        <tr class="key-row last"><td>Min purge / flow test (0.6 m/s)</td><td id="t-flow"></td></tr>
+        <tr class="key-row last"><td>Minimum flow rate = 0.6 m/s</td><td id="t-flow"></td></tr>
       </tbody>
     </table>
     <div class="field" style="margin-top:.35rem">
@@ -615,7 +615,7 @@ table.spaced td { border-bottom: 0; }
     </div>
     <table class="spaced">
       <tbody>
-        <tr class="key-row"><td>Expected pressure drop</td><td id="t-dp"></td></tr>
+        <tr class="key-row"><td>Expected friction loss</td><td id="t-dp"></td></tr>
         <tr class="key-row last"><td>Pass window (±10%)</td><td id="t-band"></td></tr>
       </tbody>
     </table>
@@ -624,7 +624,7 @@ table.spaced td { border-bottom: 0; }
     <ol class="steps">
       <li>Clean mains water only. Pump at or above the flow above.</li>
       <li>Run until the sight glass is a solid clear stream, then at least 20 minutes, and a 100–200 µm bag stays empty for 10 minutes.</li>
-      <li>At a steady flow, the gauge’s across the loop must read with pressure drop differential inside the pass window. High means air or a pinch/kink. Low means a bypass.</li>
+      <li>At a steady flow, the gauge’s across the loop must read with the friction loss inside the pass window. High means air or a pinch/kink. Low means a bypass.</li>
     </ol>
     <p class="step-h">Pressure test</p>
     <ol class="steps">
@@ -747,13 +747,13 @@ Outer area = π/4 × Outer diameter²
 Inner area = π/4 × Inner diameter²
 Wall area  = Outer area − Inner area</pre></div>
       <div class="formula"><h3>Cross-section clearance</h3><pre>Bundle = smallest circle around loops + tremie
-Loop pipes sit with a gap of 2 × wall thickness (how they are fixed in the probe foot)
-Probe foot (cross-section pill)
+Loop pipes sit with a gap of 2 × wall thickness (how they are fixed in the U Bend)
+U Bend (cross-section pill)
   Wall thickness t = OD / 11
   Widest  = 2 × OD + 4 × t
   Narrowest = Widest / 2
   50 mm: t = 4.55 mm → 118.2 × 59.1 mm
-Governing size = max(Bundle, foot widest, foot narrowest)
+Governing size = max(Bundle, U Bend widest, U Bend narrowest)
 Clearance = Borehole diameter − Governing size</pre></div>
       <div class="formula"><h3>Loop force balance (closed, pre-filled)</h3><pre>Mud density (kg/m³) = Target mud weight (g/cm³) × 1000
 Buoyancy = Mud density × Outer area × Depth × Pipe count
@@ -804,17 +804,18 @@ Min flow = 0.6 m/s × Area
 50 mm   bore 40.91 mm   47.3 L/min
 
 Pump flow starts at the next 5 L/min above that minimum.
-Pressure drop uses the pump flow you set, not the minimum.</pre></div>
-      <div class="formula wide"><h3>Pressure drop / friction loss</h3><pre>Path = 2 × design depth
+Friction loss uses the pump flow you set, not the minimum.</pre></div>
+      <div class="formula wide"><h3>Friction loss</h3><pre>Path = 2 × design depth
 v = pump flow / Area
 Water at 10°C.  Viscosity 1.306×10⁻⁶ m²/s.  Density 999.7 kg/m³.  PE roughness 0.007 mm.
 
 Reynolds  Re = v × Bore / 1.306×10⁻⁶
 Friction  f  = 0.25 / [log₁₀(roughness / (3.7 × Bore) + 5.74 / Re⁰·⁹)]²
 Head      hf = f × (Path / Bore) × (v² / (2 × 9.81))
-Drop      ΔP = 999.7 × 9.81 × hf / 100000     (bar)
+Loss      ΔP = 999.7 × 9.81 × hf / 100000     (bar)
+          kPa = bar × 100
 
-Pass window = drop × 0.9 to drop × 1.1</pre></div>
+Pass window = loss × 0.9 to loss × 1.1</pre></div>
     </div>
   </details>
 
@@ -844,8 +845,8 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
 
 <script>
 /* all the working. pipe is SDR 11, fixed.
-   pipeGeom / bundleCircles / footPill  - sizes and the plan, foot is a pill
-   loopTest                               - 0.6 m/s flow and the darcy pressure drop
+   pipeGeom / bundleCircles / footPill  - sizes and the plan, U Bend is a pill
+   loopTest                               - 0.6 m/s flow and the darcy friction loss
    compute                                - weight, overdrill, grout, casing void, water
    render                                 - tables, warning, drawing, test figures
    buildPdfBlob                           - job sheet plus the testing parameters
@@ -854,7 +855,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
   const SDR = 11;
   // densities, kg/m3. hdpe is near enough for the pipe weight
   const STEEL_DENS = 7850, HDPE_DENS = 950, WATER_DENS = 1000;
-  // what the foot will carry, kg. modular weights only - rebar is taped on, not hung off the foot
+  // what the U Bend will carry, kg. modular weights only - rebar is taped on, not hung off the U Bend
   const MGS_FOOT_LOAD = {
     25: { 2: 40, 4: 80 },
     32: { 2: 200, 4: 400 },
@@ -895,7 +896,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     return rho * g * hf / 1e5;
   }
   function loopTest(odMm, sdr, depth, pumpLpm) {
-    // minimum is 0.6 m/s. the pump box can sit higher, and the drop follows that
+    // minimum is 0.6 m/s. the pump box can sit higher, and the friction loss follows that
     const boreMm = odMm - 2 * (odMm / sdr);
     const D = boreMm / 1000;
     const area = (Math.PI / 4) * D * D;
@@ -914,7 +915,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     return { OD, ID, areaOuter, areaInner, areaWall: areaOuter - areaInner };
   }
   function bundleCircles(loopODmm, legs, tremODmm, rebarOn, sdr) {
-    // gap between pipes is 2 x wall. that's how they're fixed in the foot, not butted together
+    // gap between pipes is 2 x wall. that's how they're fixed in the U Bend, not butted together
     const r = loopODmm / 2;
     const t = loopODmm / sdr;
     const half = r + t;
@@ -966,7 +967,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     return { x: sumA > 0 ? sumX / sumA : 0, y: sumA > 0 ? sumY / sumA : 0 };
   }
   function footPill(loopODmm, sdr) {
-    // cross section of the foot. wide = 2*od + 4*wall, narrow is half. 50mm sdr11 = 118.2
+    // cross section of the U Bend. wide = 2*od + 4*wall, narrow is half. 50mm sdr11 = 118.2
     // doesn't go into the grout or the depth, it's only the plan + the clearance
     const t = loopODmm / sdr;
     const len = 2 * loopODmm + 4 * t;
@@ -1185,7 +1186,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     const footWarn = document.getElementById("footLoadWarn");
     if (r.footOverload) {
       footWarn.hidden = false;
-      footWarn.innerHTML = "<b>Exceeds probe foot load</b>" +
+      footWarn.innerHTML = "<b>Exceeds U Bend load</b>" +
         formatNum(r.installedMass, 0) + " kg installed vs maximum " + formatNum(r.footLoadKg, 0) +
         " kg for a " + r.loopODmm + " mm single loop (dry-string rating). Reduce the stack, lower the sink margin, or use rebar taped along the loop.";
     } else {
@@ -1216,8 +1217,8 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     setHtml("o-groutWater", formatNum(r.groutWater, 0) + "<small> L</small>");
     setHtml("o-groutGauges", formatNum(r.groutGauges, 1));
     setHtml("t-flow", formatNum(r.testMinLpm, 1) + "<small> L/min</small>");
-    setHtml("t-dp", formatNum(r.testDp, 2) + "<small> bar</small>");
-    setHtml("t-band", formatNum(r.testLo, 2) + " – " + formatNum(r.testHi, 2) + "<small> bar</small>");
+    setHtml("t-dp", formatNum(r.testDp, 2) + "<small> bar</small><br>" + formatNum(r.testDp * 100, 0) + "<small> kPa</small>");
+    setHtml("t-band", formatNum(r.testLo, 2) + " – " + formatNum(r.testHi, 2) + "<small> bar</small><br>" + formatNum(r.testLo * 100, 0) + " – " + formatNum(r.testHi * 100, 0) + "<small> kPa</small>");
     const slideMin = Math.ceil(r.testMinLpm - 1e-6);
     const pumpSlide = document.getElementById("pumpFlowSlide");
     pumpSlide.min = String(slideMin);
@@ -1227,7 +1228,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     document.getElementById("pumpTickMin").textContent = String(slideMin);
     document.getElementById("t-note").textContent =
       r.loopODmm + " mm SDR 11, bore " + formatNum(r.testBore, 1) + " mm. Flow path " + formatNum(r.testPath, 0) +
-      " m, down and back. Pressure drop is at the pump flow, which starts on the next 5 L/min above 0.6 m/s.";
+      " m, down and back. Friction loss is at the pump flow, which starts on the next 5 L/min above 0.6 m/s.";
     const sdrLabel = "11";
     const cfg = r.legs === 4 ? "double" : "single";
     const holes = r.holes;
@@ -1301,7 +1302,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     if (r.rebarOn) legend += '<div><span class="sw" style="background:var(--muted)"></span>Rebar — 40 mm OD</div>';
     if (r.tremODmm > 0) legend += '<div><span class="sw" style="background:var(--accent)"></span>Tremie — ' + r.tremODmm + " mm OD</div>";
     legend += '<div><span class="sw" style="border:1px dashed var(--line);background:transparent"></span>Borehole — ' + formatNum(r.boreDiaMM, 1) + " mm</div>";
-    legend += '<div><span class="sw" style="background:#111;border-radius:999px"></span>Probe foot — ' + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm</div>";
+    legend += '<div><span class="sw" style="background:#111;border-radius:999px"></span>U Bend — ' + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm</div>";
     document.getElementById("legend").innerHTML = legend;
 
     const banner = document.getElementById("clearance");
@@ -1309,7 +1310,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     banner.className = "banner " + (ok ? "ok" : "bad");
     let title, body;
     const footGoverns = r.footDia >= r.bundleDia;
-    const wideName = footGoverns ? "Probe foot" : "Bundle";
+    const wideName = footGoverns ? "U Bend" : "Bundle";
     const wideMm = footGoverns ? r.footDia : r.bundleDia;
     const wideDec = footGoverns ? 1 : 0;
     if (r.clearanceStatus === "nofit") {
@@ -1320,7 +1321,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
       body = wideName + " Ø " + formatNum(wideMm, wideDec) + " mm, leaving only ≈" + formatNum(r.clearance, 0) + " mm total (≈" + formatNum(r.eachSide, 0) + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
     } else {
       title = "Clearance looks workable";
-      body = "Bundle ≈" + formatNum(r.bundleDia, 0) + " mm, probe foot " + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm, leaving ≈" + formatNum(r.clearance, 0) + " mm total (≈" + formatNum(r.eachSide, 0) + " mm each side) against the borehole wall.";
+      body = "Bundle ≈" + formatNum(r.bundleDia, 0) + " mm, U Bend " + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm, leaving ≈" + formatNum(r.clearance, 0) + " mm total (≈" + formatNum(r.eachSide, 0) + " mm each side) against the borehole wall.";
     }
     banner.innerHTML = "<b>" + title + "</b>" + body;
   }
@@ -1425,6 +1426,8 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     document.getElementById("themeIcon").innerHTML = t === "dark"
       ? '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
       : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", t === "light" ? "#f0eeeb" : "#1a1b1d");
   }
   document.getElementById("btnTheme").addEventListener("click", function () {
     const next = themeNow() === "dark" ? "light" : "dark";
@@ -1551,12 +1554,15 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
       line(LEFT, y, 194, y);
       y += 6;
     }
-    function pair(x, valueW, yy, label, value, hi) {
+    function pair(x, valueW, yy, label, value, hi, gap) {
       rgb(hi ? ORANGE : MUTED, true);
       text(label, x, yy, 8.5, hi ? "F2" : "F1");
       rgb(hi ? ORANGE : INK, true);
-      const lines = wrap(value, valueW, 8.5);
-      lines.forEach(function (ln, i) { text(ln, x + 52, yy + i * 4, 8.5, hi ? "F2" : "F1"); });
+      const lines = [];
+      String(value).split("\n").forEach(function (part) {
+        wrap(part, valueW, 8.5).forEach(function (ln) { lines.push(ln); });
+      });
+      lines.forEach(function (ln, i) { text(ln, x + (gap || 52), yy + i * 4, 8.5, hi ? "F2" : "F1"); });
       return yy + Math.max(5.2, lines.length * 4);
     }
 
@@ -1574,7 +1580,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
       ["Over-drill", formatNum(r.overdrill, r.overdrill ? 2 : 0) + " m"],
       ["Clearance", formatNum(r.clearance, 0) + " mm, " + (r.clearanceStatus === "ok" ? "workable" : r.clearanceStatus === "tight" ? "tight" : "does not fit")],
       ["Sink margin", r.safetyFactor.toFixed(2) + "x", true],
-      ["Recommended weight", formatNum(r.installedMass, 0) + " kg (" + formatNum(r.units, 0) + " x " + unitKg + ")" + (r.footOverload ? " - OVER FOOT LOAD" : ""), true],
+      ["Recommended weight", formatNum(r.installedMass, 0) + " kg (" + formatNum(r.units, 0) + " x " + unitKg + ")" + (r.footOverload ? " - OVER U BEND LOAD" : ""), true],
       ["Design depth", formatNum(r.depth, 0) + " m", true],
       ["Required borehole depth", formatNum(r.totalDepth, 1) + " m", true],
       ["Rod length", metres(rods.len) + " m"],
@@ -1628,16 +1634,16 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
     if (r.rebarOn) swatch([120, 122, 125], "Rebar 40 mm");
     if (r.tremODmm > 0) swatch([232, 87, 15], "Tremie " + r.tremODmm + " mm");
     swatch([196, 180, 154], "Borehole " + formatNum(r.boreDiaMM, 1) + " mm");
-    swatch([28, 29, 31], "Probe foot " + formatNum(r.footDia, 1) + " x " + formatNum(r.footWid, 1) + " mm");
+    swatch([28, 29, 31], "U Bend " + formatNum(r.footDia, 1) + " x " + formatNum(r.footWid, 1) + " mm");
 
     y = Math.max(ky, ly) + 6;
     heading("Testing parameters");
     [
-      ["Min purge / flow test", formatNum(r.testMinLpm, 1) + " L/min", true],
+      ["Minimum flow rate = 0.6 m/s", formatNum(r.testMinLpm, 1) + " L/min", true],
       ["Actual pump flow", formatNum(r.testLpm, 1) + " L/min", true],
-      ["Expected pressure drop", formatNum(r.testDp, 2) + " bar", true],
-      ["Pass window", formatNum(r.testLo, 2) + " - " + formatNum(r.testHi, 2) + " bar", true]
-    ].forEach(function (row) { y = pair(LEFT, 120, y, row[0], row[1], row[2]); });
+      ["Expected friction loss", formatNum(r.testDp, 2) + " bar\n" + formatNum(r.testDp * 100, 0) + " kPa", true],
+      ["Pass window", formatNum(r.testLo, 2) + " - " + formatNum(r.testHi, 2) + " bar\n" + formatNum(r.testLo * 100, 0) + " - " + formatNum(r.testHi * 100, 0) + " kPa", true]
+    ].forEach(function (row) { y = pair(LEFT, 100, y, row[0], row[1], row[2], 68); });
     y += 1.5;
     function para(str) {
       rgb(INK, true);
@@ -1646,7 +1652,7 @@ Pass window = drop × 0.9 to drop × 1.1</pre></div>
         y += 3.6;
       });
     }
-    para("Purge / flow test. Mains water only, at or above the flow above, until the sight glass is a solid clear stream. Then at least 20 minutes, and a 100-200 um bag stays empty for 10 minutes. At a steady flow the pressure-drop differential must sit inside the pass window. High means air or a pinch/kink. Low means a bypass.");
+    para("Purge / flow test. Mains water only, at or above the flow above, until the sight glass is a solid clear stream. Then at least 20 minutes, and a 100-200 um bag stays empty for 10 minutes. At a steady flow the friction loss must sit inside the pass window. High means air or a pinch/kink. Low means a bypass.");
     y += 1.2;
     para("Pressure test. Rest at 0 bar for 60 min. Raise to 6.0 bar in under 10 min and hold for 30 min. Isolate. After 60 min, P60 must be at least 4.2 bar. Bleed 10-15% (6.0 bar goes to 5.1) and isolate for 30 min. Pass if the needle rises or stays still.");
     y += 6;
