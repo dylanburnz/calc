@@ -1574,12 +1574,11 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       ["Boreholes", formatNum(holes, 0)],
       ["Loop", r.loopODmm + " mm, " + cfg + ", SDR " + sdrLabel + (inputs.prefill ? ", water-filled" : "")],
       ["Tremie", r.tremieOn ? r.tremODmm + " mm open" : "None"],
-      ["Borehole", boreLabel],
+      ["Bit size", boreLabel],
     ].concat(r.casingOn ? [["Casing", (r.casingOD === 169 ? "WW" : "WE") + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]] : []).concat([
       ["Target mud weight", formatNum(inputs.mudDens, 2) + " g/cm3"],
       ["Over-drill", formatNum(r.overdrill, r.overdrill ? 2 : 0) + " m"],
       ["Clearance", formatNum(r.clearance, 0) + " mm, " + (r.clearanceStatus === "ok" ? "workable" : r.clearanceStatus === "tight" ? "tight" : "does not fit")],
-      ["Sink margin", r.safetyFactor.toFixed(2) + "x", true],
       ["Recommended weight", formatNum(r.installedMass, 0) + " kg (" + formatNum(r.units, 0) + " x " + unitKg + ")" + (r.footOverload ? " - OVER U BEND LOAD" : ""), true],
       ["Design depth", formatNum(r.depth, 0) + " m", true],
       ["Required borehole depth", formatNum(r.totalDepth, 1) + " m", true],
@@ -1633,7 +1632,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
     swatch([180, 176, 170], "Loop " + r.loopODmm + " mm x " + r.legs);
     if (r.rebarOn) swatch([120, 122, 125], "Rebar 40 mm");
     if (r.tremODmm > 0) swatch([232, 87, 15], "Tremie " + r.tremODmm + " mm");
-    swatch([196, 180, 154], "Borehole " + formatNum(r.boreDiaMM, 1) + " mm");
+    swatch([196, 180, 154], "Bit size " + formatNum(r.boreDiaMM, 1) + " mm");
     swatch([28, 29, 31], "U Bend " + formatNum(r.footDia, 1) + " x " + formatNum(r.footWid, 1) + " mm");
 
     y = Math.max(ky, ly) + 6;
