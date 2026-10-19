@@ -572,7 +572,7 @@ table.spaced td { border-bottom: 0; }
             <label for="casingOD">Casing</label>
             <select id="casingOD">
               <option value="152" selected>WE 152 mm OD</option>
-              <option value="169">WW 169 mm OD</option>
+              <option value="168.3">WW 168.3 mm OD</option>
             </select>
           </div>
           <div class="field">
@@ -1087,7 +1087,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
     // casing void = the ring left when the temp casing comes out. ignore it if the casing isn't bigger than the hole
     // don't grout past the bottom of the hole if someone types a silly length
     const casingOn = !!raw.casingOn;
-    const casingOD = casingOn ? (Number(raw.casingOD) === 169 ? 169 : 152) : 0;
+    const casingOD = casingOn ? (Number(raw.casingOD) === 168.3 ? 168.3 : 152) : 0;
     const casingLen = casingOn ? Math.max(Number(raw.casingLen) || 0, 0) : 0;
     const casingUsed = Math.min(casingLen, totalDepth);
     const casingVoid = casingOn
@@ -1247,7 +1247,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       ["Grout volume", formatNum(r.groutSite, 3) + " m³  <small>(" + formatNum(r.groutVolume, 3) + " m³ per hole)</small>", false]
     ];
     if (r.casingOn) {
-      const name = r.casingOD === 169 ? "WW" : "WE";
+      const name = r.casingOD === 168.3 ? "WW" : "WE";
       mat.splice(3, 0, ["Casing", formatNum(holes, 0) + " × " + name + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m", false]);
     }
     r.groutOrder.forEach(function (row) {
@@ -1268,7 +1268,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       ["Loop", r.loopODmm + " mm · " + cfg + " · SDR " + sdrLabel + (inputs.prefill ? " · water-filled" : "")],
       ["Tremie", r.tremieOn ? r.tremODmm + " mm open" : "None"],
       ["Borehole", boreLabel],
-    ].concat(r.casingOn ? [["Casing", (r.casingOD === 169 ? "WW" : "WE") + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]] : []).concat([
+    ].concat(r.casingOn ? [["Casing", (r.casingOD === 168.3 ? "WW" : "WE") + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]] : []).concat([
       ["Target mud weight", formatNum(inputs.mudDens, 2) + " g/cm³"],
       ["Over-drill", formatNum(r.overdrill, r.overdrill ? 2 : 0) + " m"],
       ["Clearance", formatNum(r.clearance, 0) + " mm · " + (r.clearanceStatus === "ok" ? "workable" : r.clearanceStatus === "tight" ? "tight" : "does not fit")]
@@ -1575,7 +1575,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       ["Loop", r.loopODmm + " mm, " + cfg + ", SDR " + sdrLabel + (inputs.prefill ? ", water-filled" : "")],
       ["Tremie", r.tremieOn ? r.tremODmm + " mm open" : "None"],
       ["Bit size", boreLabel],
-    ].concat(r.casingOn ? [["Casing", (r.casingOD === 169 ? "WW" : "WE") + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]] : []).concat([
+    ].concat(r.casingOn ? [["Casing", (r.casingOD === 168.3 ? "WW" : "WE") + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]] : []).concat([
       ["Target mud weight", formatNum(inputs.mudDens, 2) + " g/cm3"],
       ["Over-drill", formatNum(r.overdrill, r.overdrill ? 2 : 0) + " m"],
       ["Clearance", formatNum(r.clearance, 0) + " mm, " + (r.clearanceStatus === "ok" ? "workable" : r.clearanceStatus === "tight" ? "tight" : "does not fit")],
@@ -1663,7 +1663,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       ["Grout volume", formatNum(r.groutSite, 3) + " m3 (" + formatNum(r.groutVolume, 3) + " m3 per hole)"]
     ];
     if (r.casingOn) {
-      const name = r.casingOD === 169 ? "WW" : "WE";
+      const name = r.casingOD === 168.3 ? "WW" : "WE";
       mat.splice(3, 0, ["Casing", formatNum(holes, 0) + " x " + name + " " + r.casingOD + " mm OD, " + formatNum(r.casingLen, 0) + " m"]);
     }
     r.groutOrder.forEach(function (row) {
