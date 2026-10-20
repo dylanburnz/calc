@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB" data-theme="dark">
+<html lang="en-GB" data-theme="light">
 <!--
   GSHP borehole calculator. Dylan Burns.
   One html file. Pipe is always SDR 11, no selector.
@@ -409,7 +409,7 @@ table.spaced td { border-bottom: 0; }
 </style>
 <script>
 /* remember light/dark before the page paints, otherwise it flashes */
-(function(){try{var t=localStorage.getItem("gshp-theme-pref");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();
+(function(){try{var t=localStorage.getItem("gshp-theme-pref");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");}catch(e){document.documentElement.setAttribute("data-theme","light");}})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1188,7 +1188,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       footWarn.hidden = false;
       footWarn.innerHTML = "<b>Exceeds U Bend load</b>" +
         formatNum(r.installedMass, 0) + " kg installed vs maximum " + formatNum(r.footLoadKg, 0) +
-        " kg for a " + r.loopODmm + " mm single loop (dry-string rating). Reduce the stack, lower the sink margin, or use rebar taped along the loop.";
+        " kg for a " + r.loopODmm + " mm single loop (dry-string rating). Reduce mud weight, or use rebar taped along the loop.";
     } else {
       footWarn.hidden = true;
       footWarn.innerHTML = "";
@@ -1422,8 +1422,9 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
   function themeNow() { return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark"; }
   function paintTheme() {
     const t = themeNow();
-    document.getElementById("themeLabel").textContent = t === "dark" ? "Dark" : "Light";
-    document.getElementById("themeIcon").innerHTML = t === "dark"
+    const other = t === "dark" ? "light" : "dark";
+    document.getElementById("themeLabel").textContent = other === "dark" ? "Dark" : "Light";
+    document.getElementById("themeIcon").innerHTML = other === "dark"
       ? '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
       : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
     const meta = document.querySelector('meta[name="theme-color"]');
