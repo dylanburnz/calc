@@ -1251,7 +1251,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       rwlNote.textContent = "";
     }
     const rwlWarn = document.getElementById("rwlWarn");
-    if (inputs.prefill && r.depth > 0 && r.restWater > r.depth * 0.75) {
+    if (inputs.prefill && r.depth > 0 && r.restWater > r.depth * 0.6) {
       rwlWarn.hidden = false;
       rwlWarn.textContent = "Consider not pre-filling loop with water.";
     } else {
