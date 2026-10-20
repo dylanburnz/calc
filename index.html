@@ -130,7 +130,8 @@ header {
   z-index: 30;
   margin: -1.25rem -1rem 0;
   padding: .4rem 1rem .45rem;
-  padding-top: max(.4rem, env(safe-area-inset-top));
+  /* home screen draws under the clock. the inset alone still clips the title, so add a bit more */
+  padding-top: calc(env(safe-area-inset-top, 0px) + .85rem);
   background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
