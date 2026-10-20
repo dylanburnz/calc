@@ -634,7 +634,7 @@ table.spaced td { border-bottom: 0; }
     <p class="step-h">Purge / flow test</p>
     <ol class="steps">
       <li>Clean mains water only. Set pump flow to match actual pump flow listed above (adjustable if needed).</li>
-      <li>Run until the sight glass is a solid clear stream, then at least 20 minutes, and a 100–200 µm bag stays empty for 10 minutes.</li>
+      <li>Run until the sight glass is a solid clear stream, then at least 20 minutes or a 100–200 µm filter bag stays empty for 10 minutes.</li>
       <li>At a steady flow, the gauge difference(friction loss) across the loop must be within the pass window above. High means air or a blockage/kink. Low means a bypass.</li>
     </ol>
     <p class="step-h">Pressure test</p>
@@ -642,7 +642,7 @@ table.spaced td { border-bottom: 0; }
       <li>Rest the isolated loop at 0 bar for 60 minutes.</li>
       <li>Bring it to 6.0 bar in under 10 minutes. Hold 6.0 bar for 30 minutes, topping up as the pipe expands.</li>
       <li>Isolate the pump. After 60 minutes (P60) the gauge must still read at least 4.2 bar.</li>
-      <li>Bleed quickly by 10–15% (a 5.0 bar P60 goes to 4.3 bar) and shut the valve. Over the next 30 minutes the needle must rise or stay still. If it falls, there is a leak — drop to 0 bar and wait 8 hours before another test.</li>
+      <li>Bleed quickly by 10–15% (a 5.0 bar P60 goes to 4.3 bar) and shut the valve. Over the next 30 minutes the needle must rise or stay still to pass. If it falls, there is a leak — drop to 0 bar and wait 8 hours before another test.</li>
     </ol>
     <details class="more guide-drop">
       <summary>Full guide <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
@@ -1697,7 +1697,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
         y += 3.6;
       });
     }
-    para("Purge / flow test. Clean mains water only. Set the pump to the actual pump flow listed above (adjustable if needed), until the sight glass is a solid clear stream. Then at least 20 minutes, and a 100-200 um bag stays empty for 10 minutes. At a steady flow, the gauge difference(friction loss) across the loop must be within the pass window. High means air or a blockage/kink. Low means a bypass.");
+    para("Purge / flow test. Clean mains water only. Set the pump to the actual pump flow listed above (adjustable if needed), until the sight glass is a solid clear stream. Then at least 20 minutes, or a 100-200 um filter bag stays empty for 10 minutes. At a steady flow, the gauge difference(friction loss) across the loop must be within the pass window. High means air or a blockage/kink. Low means a bypass.");
     y += 1.2;
     para("Pressure test. Rest at 0 bar for 60 min. Raise to 6.0 bar in under 10 min and hold for 30 min. Isolate. After 60 min, P60 must be at least 4.2 bar. Bleed 10-15% (5.0 bar goes to 4.3) and isolate for 30 min. Pass if the needle rises or stays still.");
     y += 6;
