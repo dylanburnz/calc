@@ -761,7 +761,7 @@ Inner diameter = Outer diameter − 2 × Wall thickness
 Outer area = π/4 × Outer diameter²
 Inner area = π/4 × Inner diameter²
 Wall area  = Outer area − Inner area</pre></div>
-      <div class="formula"><h3>Cross-section clearance</h3><pre>U Bend (cross-section pill). This is the largest part.
+      <div class="formula"><h3>Cross-section clearance</h3><pre>U Bend. This is the largest part.
   Wall thickness t = OD / 11
   Widest  = 2 × OD + 4 × t
   Narrowest = Widest / 2
@@ -877,7 +877,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
 
 <script>
 /* all the working. pipe is SDR 11, fixed.
-   pipeGeom / bundleCircles / footPill  - sizes and the plan, U Bend is a pill
+   pipeGeom / bundleCircles / uBend  - sizes and the plan
    loopTest                               - 0.6 m/s flow and the darcy friction loss
    compute                                - weight, overdrill, grout, casing void, water
    render                                 - tables, warning, drawing, test figures
@@ -987,7 +987,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
     }
     return { x: 0, y: (lo + hi) / 2 };
   }
-  function footPill(loopODmm, sdr) {
+  function uBend(loopODmm, sdr) {
     // cross section of the U Bend. wide = 2*od + 4*wall, narrow is half. 50mm sdr11 = 118.2
     // doesn't go into the grout or the depth, it's only the plan + the clearance
     const t = loopODmm / sdr;
@@ -1128,9 +1128,9 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
     // loops ordered 5 m longer than the design depth so the tails stay above ground
     const tremODmm = tremieOn ? raw.tremieOD : 0;
     const circles = bundleCircles(raw.loopOD, legs, tremODmm, rebarOn, sdr);
-    const pill = footPill(raw.loopOD, sdr);
-    const footDia = pill.len;
-    const footWid = pill.wid;
+    const ubend = uBend(raw.loopOD, sdr);
+    const footDia = ubend.len;
+    const footWid = ubend.wid;
     // clearance is borehole minus the U Bend. the wide side is the largest part
     const governingDia = footDia;
     const clearance = boreDiaMM - governingDia;
