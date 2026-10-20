@@ -553,7 +553,7 @@ table.spaced td { border-bottom: 0; }
           </div>
         </div>
         <div class="banner print-hide" id="clearance"></div>
-        <!-- green if there's room, red if the bundle or the U Bend is tight or won't fit -->
+        <!-- green if the U Bend has room, red if it is tight or will not fit -->
       </section>
 
 <section class="panel panel-rods print-hide">
@@ -760,15 +760,12 @@ Inner diameter = Outer diameter − 2 × Wall thickness
 Outer area = π/4 × Outer diameter²
 Inner area = π/4 × Inner diameter²
 Wall area  = Outer area − Inner area</pre></div>
-      <div class="formula"><h3>Cross-section clearance</h3><pre>Bundle = smallest circle around loops + tremie
-Loop pipes sit with a gap of 2 × wall thickness (how they are fixed in the U Bend)
-U Bend (cross-section pill)
+      <div class="formula"><h3>Cross-section clearance</h3><pre>U Bend (cross-section pill). This is the largest part.
   Wall thickness t = OD / 11
   Widest  = 2 × OD + 4 × t
   Narrowest = Widest / 2
   50 mm: t = 4.55 mm → 118.2 × 59.1 mm
-Governing size = max(Bundle, U Bend widest, U Bend narrowest)
-Clearance = Borehole diameter − Governing size</pre></div>
+Clearance = Borehole diameter − U Bend widest</pre></div>
       <div class="formula"><h3>Loop force balance (closed, pre-filled)</h3><pre>Mud density (kg/m³) = Target mud weight (g/cm³) × 1000
 Rest water level is the depth from surface to standing water. 0 m = the hole is full.
 Dry length = min(Rest water level, Design depth)
@@ -978,7 +975,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
     return circles;
   }
   function enclosingCenter(circles) {
-    // centre of the smallest circle around the pipes. just for the drawing + the bundle dia
+    // centre of the pipes, so the drawing sits in the middle of the hole
     if (!circles.length) return { x: 0, y: 0 };
     let lo = Math.min(...circles.map((c) => c.y - c.r)) - 1;
     let hi = Math.max(...circles.map((c) => c.y + c.r)) + 1;
@@ -988,18 +985,6 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       if (R(m1) < R(m2)) hi = m2; else lo = m1;
     }
     return { x: 0, y: (lo + hi) / 2 };
-  }
-  function minEnclosingDiameter(circles) {
-    const k = enclosingCenter(circles).y;
-    return 2 * Math.max(...circles.map((c) => Math.sqrt(c.x * c.x + (c.y - k) * (c.y - k)) + c.r));
-  }
-  function bundleCentroid(circles) {
-    let sumX = 0, sumY = 0, sumA = 0;
-    for (const c of circles) {
-      const a = Math.PI * c.r * c.r;
-      sumX += c.x * a; sumY += c.y * a; sumA += a;
-    }
-    return { x: sumA > 0 ? sumX / sumA : 0, y: sumA > 0 ? sumY / sumA : 0 };
   }
   function footPill(loopODmm, sdr) {
     // cross section of the U Bend. wide = 2*od + 4*wall, narrow is half. 50mm sdr11 = 118.2
@@ -1142,13 +1127,11 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
     // loops ordered 5 m longer than the design depth so the tails stay above ground
     const tremODmm = tremieOn ? raw.tremieOD : 0;
     const circles = bundleCircles(raw.loopOD, legs, tremODmm, rebarOn, sdr);
-    const bundleDia = minEnclosingDiameter(circles);
-    const centroid = bundleCentroid(circles);
     const pill = footPill(raw.loopOD, sdr);
     const footDia = pill.len;
     const footWid = pill.wid;
-    const governingDia = Math.max(bundleDia, footDia, footWid);
-    // clearance is what's left to the wall. under 20mm i call it tight
+    // clearance is borehole minus the U Bend. the wide side is the largest part
+    const governingDia = footDia;
     const clearance = boreDiaMM - governingDia;
     const clearanceStatus = clearance > 20 ? "ok" : clearance > 0 ? "tight" : "nofit";
     const footLoadKg = mgsFootLoadKg(raw.loopOD, legs);
@@ -1166,7 +1149,7 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
       fillWaterHole, fillWaterSite,
       mudFlushHole, mudFlushSite,
       groutOrder: mix.groutOrder,
-      circles, centroid, bundleDia, footDia, footWid, governingDia, clearance, eachSide: clearance / 2, clearanceStatus,
+      circles, footDia, footWid, governingDia, clearance, eachSide: clearance / 2, clearanceStatus,
       footLoadKg, footOverload,
       testMinLpm: test.minLpm, testLpm: test.lpm, testDp: test.dp, testLo: test.lo, testHi: test.hi, testBore: test.boreMm, testPath: test.pathM
     };
@@ -1367,19 +1350,17 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
     const ok = r.clearanceStatus === "ok";
     banner.className = "banner " + (ok ? "ok" : "bad");
     let title, body;
-    const footGoverns = r.footDia >= r.bundleDia;
-    const wideName = footGoverns ? "U Bend" : "Bundle";
-    const wideMm = footGoverns ? r.footDia : r.bundleDia;
-    const wideDec = footGoverns ? 1 : 0;
+    const each = formatNum(r.eachSide, 0);
+    const total = formatNum(r.clearance, 0);
     if (r.clearanceStatus === "nofit") {
-      title = wideName + " does not fit";
-      body = wideName + " Ø " + formatNum(wideMm, wideDec) + " mm exceeds the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or reduce pipe count/size.";
+      title = "U Bend does not fit";
+      body = "It is wider than the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or use a smaller loop pipe.";
     } else if (r.clearanceStatus === "tight") {
       title = "Tight clearance";
-      body = wideName + " Ø " + formatNum(wideMm, wideDec) + " mm, leaving only ≈" + formatNum(r.clearance, 0) + " mm total (≈" + formatNum(r.eachSide, 0) + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
+      body = "leaving only ≈" + total + " mm total (≈" + each + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
     } else {
       title = "Clearance looks workable";
-      body = "Bundle ≈" + formatNum(r.bundleDia, 0) + " mm, U Bend " + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm, leaving ≈" + formatNum(r.clearance, 0) + " mm total (≈" + formatNum(r.eachSide, 0) + " mm each side) against the borehole wall.";
+      body = "leaving ≈" + total + " mm total (≈" + each + " mm each side) against the borehole wall.";
     }
     banner.innerHTML = "<b>" + title + "</b>" + body;
   }
