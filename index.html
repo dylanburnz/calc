@@ -1956,6 +1956,9 @@ Pass window = loss × 0.9 to loss × 1.1</pre></div>
   document.getElementById("btnCloseShare").addEventListener("click", function () {
     shareOverlay.hidden = true;
   });
+  shareOverlay.addEventListener("click", function (e) {
+    if (e.target === shareOverlay) shareOverlay.hidden = true;
+  });
   document.getElementById("btnCopyShare").addEventListener("click", function () {
     const url = shareUrlBox.value;
     function copied() { document.getElementById("btnCopyShare").textContent = "Copied"; }
