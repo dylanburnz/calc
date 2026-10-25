@@ -1083,8 +1083,7 @@ Time   = Volume / Pump flow</pre></div>
       waterL,
       groutOrder: [
         { label: "Bentonite (Part I)", massKg: partIBags * BAG_KG, bags: partIBags, pallets: Math.ceil(partIBags / BAGS_PER_PALLET) },
-        { label: "Silica Sand (Part II)", massKg: partIIBags * BAG_KG, bags: partIIBags, pallets: Math.ceil(partIIBags / BAGS_PER_PALLET) },
-        { label: "Total (both parts)", massKg: partIBags * BAG_KG + partIIBags * BAG_KG, bags: partIBags + partIIBags, pallets: Math.ceil(partIBags / BAGS_PER_PALLET) + Math.ceil(partIIBags / BAGS_PER_PALLET) }
+        { label: "Silica Sand (Part II)", massKg: partIIBags * BAG_KG, bags: partIIBags, pallets: Math.ceil(partIIBags / BAGS_PER_PALLET) }
       ]
     };
   }
