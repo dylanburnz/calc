@@ -277,9 +277,16 @@ table.spaced { border-collapse: separate; border-spacing: 0 .4rem; }
 table.spaced td { border-bottom: 0; }
 .num { font-weight: 500; }
 .num small { margin-left: .25rem; font-size: .75rem; font-weight: 400; color: var(--muted); }
-.plan { display: grid; gap: 1rem; align-items: start; }
-@media (min-width: 520px) { .plan { grid-template-columns: auto 1fr; } }
-#section { display: block; width: 14rem; height: 14rem; margin: 0 auto; }
+.plan { display: grid; gap: .85rem; align-items: start; }
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.plans figure { margin: 0; }
+.plans svg { display: block; width: 100%; height: auto; max-width: 13rem; margin: 0 auto; }
+.plans figcaption {
+  margin: .3rem 0 0; text-align: center;
+  font-family: var(--font-display); font-size: .7rem; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink);
+}
+@media (min-width: 520px) { .plan { grid-template-columns: 1fr; } }
 .legend { font-size: .8rem; color: var(--muted); line-height: 1.8; }
 .sw { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; margin-right: .45rem; vertical-align: middle; }
 .banner { margin-top: 1rem; padding: .75rem .9rem; border-radius: var(--radius); font-size: .875rem; line-height: 1.45; }
@@ -560,12 +567,17 @@ table.spaced td { border-bottom: 0; }
         <div class="banner bad print-hide" id="rwlWarn" hidden></div>
         <div class="hr print-hide"></div>
         <div class="plan">
-          <!-- empty until render() draws the borehole, pipes, tremie and the U Bend -->
-          <svg id="section" viewBox="0 0 220 220" role="img" aria-label="Borehole cross-section"></svg>
-          <div>
-            <p style="font-family:var(--font-display);font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin:0 0 .4rem">Cross section</p>
-            <div class="legend" id="legend"></div>
+          <div class="plans">
+            <figure>
+              <svg id="section" viewBox="0 0 220 220" role="img" aria-label="U Bend cross-section"></svg>
+              <figcaption id="capFoot">U Bend</figcaption>
+            </figure>
+            <figure>
+              <svg id="bundle" viewBox="0 0 220 220" role="img" aria-label="Bundle cross-section"></svg>
+              <figcaption id="capBundle">Bundle</figcaption>
+            </figure>
           </div>
+          <div class="legend" id="legend"></div>
         </div>
         <div class="banner print-hide" id="clearance"></div>
         <!-- green if the U Bend has room, red if it is tight or will not fit -->
@@ -768,13 +780,14 @@ Inner diameter = Outer diameter − 2 × Wall thickness
 Outer area = π/4 × Outer diameter²
 Inner area = π/4 × Inner diameter²
 Wall area  = Outer area − Inner area</pre></div>
-      <div class="formula"><h3>Cross-section clearance</h3><pre>U Bend. This is the largest part.
+      <div class="formula"><h3>Cross-section clearance</h3><pre>U Bend
   Wall thickness t = OD / 11
   Widest  = 2 × OD + 4 × t
   Narrowest = Widest / 2
   50 mm: t = 4.55 mm → 118.2 × 59.1 mm
-Clearance = Borehole diameter − U Bend widest
-If the bundle of pipes is wider than the U Bend, clearance uses the bundle instead.</pre></div>
+Clearance = Borehole diameter − the wider of the two
+U Bend uses the gap the pipes are fixed in.
+Bundle is the pipes touching, as they sit away from the U Bend. Tremie and rebar are included.</pre></div>
       <div class="formula"><h3>Loop force balance (closed, pre-filled)</h3><pre>Mud density (kg/m³) = Target mud weight (g/cm³) × 1000
 Rest water level is the depth from surface to standing water. 0 m = the hole is full.
 Dry length = min(Rest water level, Design depth)
@@ -961,11 +974,11 @@ Time   = Volume / Pump flow</pre></div>
     const areaInner = (Math.PI / 4) * ID * ID;
     return { OD, ID, areaOuter, areaInner, areaWall: areaOuter - areaInner };
   }
-  function bundleCircles(loopODmm, legs, tremODmm, rebarOn, sdr) {
-    // gap between pipes is 2 x wall. that's how they're fixed in the U Bend, not butted together
+  function bundleCircles(loopODmm, legs, tremODmm, rebarOn, sdr, touching) {
+    // at the U Bend the pipes are held apart by 2 x wall. away from it they can touch, which pushes the tremie and rebar further out
     const r = loopODmm / 2;
     const t = loopODmm / sdr;
-    const half = r + t;
+    const half = touching ? r : r + t;
     let positions, tremMid, tremDir, halfDist;
     if (legs === 2) {
       positions = [[-half, 0], [half, 0]]; tremMid = [0, 0]; tremDir = [0, -1]; halfDist = half;
@@ -1003,7 +1016,7 @@ Time   = Volume / Pump flow</pre></div>
     return { x: 0, y: (lo + hi) / 2 };
   }
   function bundleDiameter(circles) {
-    // smallest circle around the pipes. only used when it is wider than the U Bend
+    // smallest circle around the pipes, with the loops touching
     if (!circles.length) return 0;
     const k = enclosingCenter(circles).y;
     return 2 * Math.max(...circles.map((c) => Math.sqrt(c.x * c.x + (c.y - k) * (c.y - k)) + c.r));
@@ -1155,12 +1168,13 @@ Time   = Volume / Pump flow</pre></div>
     const mudFlushSite = mudFlushHole * holes;
     // loops ordered 5 m longer than the design depth so the tails stay above ground
     const tremODmm = tremieOn ? raw.tremieOD : 0;
-    const circles = bundleCircles(raw.loopOD, legs, tremODmm, rebarOn, sdr);
+    const circles = bundleCircles(raw.loopOD, legs, tremODmm, rebarOn, sdr, false);
+    const touchCircles = bundleCircles(raw.loopOD, legs, tremODmm, rebarOn, sdr, true);
     const ubend = uBend(raw.loopOD, sdr);
     const footDia = ubend.len;
     const footWid = ubend.wid;
-    const bundleDia = bundleDiameter(circles);
-    // U Bend is usually the widest. the bundle only takes over when the pipes stick out past it
+    const bundleDia = bundleDiameter(touchCircles);
+    // clearance uses whichever sticks out further
     const bundleGoverns = bundleDia > footDia;
     const governingDia = bundleGoverns ? bundleDia : footDia;
     const clearance = boreDiaMM - governingDia;
@@ -1180,7 +1194,7 @@ Time   = Volume / Pump flow</pre></div>
       fillWaterHole, fillWaterSite,
       mudFlushHole, mudFlushSite,
       groutOrder: mix.groutOrder,
-      circles, footDia, footWid, bundleDia, bundleGoverns, governingDia, clearance, eachSide: clearance / 2, clearanceStatus,
+      circles, touchCircles, footDia, footWid, bundleDia, bundleGoverns, governingDia, clearance, eachSide: clearance / 2, clearanceStatus,
       footLoadKg, footOverload,
       testMinLpm: test.minLpm, testLpm: test.lpm, testDp: test.dp, testLo: test.lo, testHi: test.hi, testBore: test.boreMm, testPath: test.pathM, testCirc: test.circSec
     };
@@ -1351,32 +1365,38 @@ Time   = Volume / Pump flow</pre></div>
     }).join("");
     document.getElementById("printSite").textContent = inputs.siteName;
 
-    const size = 220, cx = 110, cy = 110, margin = 16, scale = (size - margin * 2) / r.boreDiaMM, boreR = (r.boreDiaMM / 2) * scale;
-    const svg = document.getElementById("section");
-    let svgHtml = '<circle cx="' + cx + '" cy="' + cy + '" r="' + boreR + '" fill="var(--mud)" opacity="0.28"/>';
-    svgHtml += '<circle cx="' + cx + '" cy="' + cy + '" r="' + boreR + '" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 3"/>';
-    const vis = r.circles.filter(function (c) { return c.type !== "rebar"; });
-    const mid = enclosingCenter(vis.length ? vis : r.circles);
-    const loopOnly = r.circles.filter(function (c) { return c.type === "loop"; });
-    const footMid = enclosingCenter(loopOnly.length ? loopOnly : r.circles);
-    const fx = cx + (footMid.x - mid.x) * scale;
-    const fy = cy + (footMid.y - mid.y) * scale;
-    svgHtml += '<path d="' + stadiumPath(fx, fy, r.footDia * scale, r.footWid * scale) + '" fill="#111" stroke="#111" stroke-width="0.6"/>';
-    r.circles.forEach(function (c) {
-      const px = cx + (c.x - mid.x) * scale;
-      const py = cy + (c.y - mid.y) * scale;
-      const pr = c.r * scale;
-      const fill = c.type === "tremie" ? "var(--accent)" : c.type === "rebar" ? "var(--muted)" : "var(--pipe)";
-      svgHtml += '<circle cx="' + px + '" cy="' + py + '" r="' + pr + '" fill="' + fill + '" stroke="var(--pipe-stroke)" stroke-width="1.5" opacity="' + (c.type === "tremie" ? "0.9" : "1") + '"/>';
-    });
-    svg.innerHTML = svgHtml;
-    svg.setAttribute("aria-label", "Borehole cross-section, " + formatNum(r.boreDiaMM, 1) + " millimetres");
+    const size = 220, pcx = 110, pcy = 110, margin = 16, scale = (size - margin * 2) / r.boreDiaMM, boreR = (r.boreDiaMM / 2) * scale;
+    function paint(el, pack, withFoot) {
+      const centreOn = withFoot
+        ? pack.filter(function (c) { return c.type !== "rebar"; })
+        : pack;
+      const mid = enclosingCenter(centreOn.length ? centreOn : pack);
+      let html = '<circle cx="' + pcx + '" cy="' + pcy + '" r="' + boreR + '" fill="var(--mud)" opacity="0.28"/>';
+      html += '<circle cx="' + pcx + '" cy="' + pcy + '" r="' + boreR + '" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 3"/>';
+      if (withFoot) {
+        const loopOnly = pack.filter(function (c) { return c.type === "loop"; });
+        const footMid = enclosingCenter(loopOnly.length ? loopOnly : pack);
+        const fx = pcx + (footMid.x - mid.x) * scale;
+        const fy = pcy + (footMid.y - mid.y) * scale;
+        html += '<path d="' + stadiumPath(fx, fy, r.footDia * scale, r.footWid * scale) + '" fill="#111" stroke="#111" stroke-width="0.6"/>';
+      }
+      pack.forEach(function (c) {
+        const px = pcx + (c.x - mid.x) * scale;
+        const py = pcy + (c.y - mid.y) * scale;
+        const pr = c.r * scale;
+        const fill = c.type === "tremie" ? "var(--accent)" : c.type === "rebar" ? "var(--muted)" : "var(--pipe)";
+        html += '<circle cx="' + px + '" cy="' + py + '" r="' + pr + '" fill="' + fill + '" stroke="var(--pipe-stroke)" stroke-width="1.5" opacity="' + (c.type === "tremie" ? "0.9" : "1") + '"/>';
+      });
+      el.innerHTML = html;
+    }
+    paint(document.getElementById("section"), r.circles, true);
+    paint(document.getElementById("bundle"), r.touchCircles, false);
+    document.getElementById("capFoot").textContent = "U Bend — " + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm";
+    document.getElementById("capBundle").textContent = "Bundle — " + formatNum(r.bundleDia, 0) + " mm";
     let legend = '<div><span class="sw" style="background:var(--pipe)"></span>Loop pipes — ' + r.loopODmm + " mm OD × " + r.legs + "</div>";
     if (r.rebarOn) legend += '<div><span class="sw" style="background:var(--muted)"></span>Rebar — 40 mm OD</div>';
     if (r.tremODmm > 0) legend += '<div><span class="sw" style="background:var(--accent)"></span>Tremie — ' + r.tremODmm + " mm OD</div>";
     legend += '<div><span class="sw" style="border:1px dashed var(--line);background:transparent"></span>Borehole — ' + formatNum(r.boreDiaMM, 1) + " mm</div>";
-    legend += '<div><span class="sw" style="background:#111;border-radius:999px"></span>U Bend — ' + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm</div>";
-    if (r.rebarOn) legend += '<div><span class="sw" style="border:1.5px solid var(--ink);border-radius:999px;background:transparent"></span>Bundle — ' + formatNum(r.bundleDia, 0) + " mm</div>";
     document.getElementById("legend").innerHTML = legend;
 
     const banner = document.getElementById("clearance");
@@ -1672,50 +1692,43 @@ Time   = Volume / Pump flow</pre></div>
     let ky = y;
     key.forEach(function (row) { ky = pair(LEFT, 70, ky, row[0], row[1], row[2]); });
 
-    const box = 58, dx = 136, dy = keyY0 - 1;
-    rgb([245, 242, 236], true);
-    rect(dx, dy, box, box, true);
-    const cx = dx + box / 2, cy = dy + box / 2;
-    const scale = (box - 8) / r.boreDiaMM;
-    const boreR = (r.boreDiaMM / 2) * scale;
-    rgb([196, 180, 154], true);
-    circle(cx, cy, boreR, "f");
-    rgb([150, 150, 150], false);
-    ops.push("0.35 w");
-    circle(cx, cy, boreR, "S");
-    const vis = r.circles.filter(function (c) { return c.type !== "rebar"; });
-    const mid = enclosingCenter(vis.length ? vis : r.circles);
-    const loopOnly = r.circles.filter(function (c) { return c.type === "loop"; });
-    const footMid = enclosingCenter(loopOnly.length ? loopOnly : r.circles);
-    const fx = cx + (footMid.x - mid.x) * scale;
-    const fy = cy + (footMid.y - mid.y) * scale;
-    rgb([17, 17, 17], true);
-    stadium(fx, fy, r.footDia * scale, r.footWid * scale, "f");
-    r.circles.forEach(function (c) {
-      const px = cx + (c.x - mid.x) * scale;
-      const py = cy + (c.y - mid.y) * scale;
-      const pr = Math.max(c.r * scale, 0.6);
-      if (c.type === "tremie") rgb([232, 87, 15], true);
-      else if (c.type === "rebar") rgb([120, 122, 125], true);
-      else rgb([180, 176, 170], true);
-      rgb([28, 29, 31], false);
-      ops.push("0.25 w");
-      circle(px, py, pr, "B");
-    });
-    let ly = dy + box + 6;
-    function swatch(color, label) {
-      rgb(color, true);
-      circle(dx + 2, ly - 0.8, 1.2, "f");
+    const box = 38, dx = 148, gap = 2.2;
+    function packDrawing(pack, top, withFoot, caption) {
+      rgb([245, 242, 236], true);
+      rect(dx, top, box, box, true);
+      const cx = dx + box / 2, cy = top + box / 2;
+      const pscale = (box - 6) / r.boreDiaMM;
+      const pBore = (r.boreDiaMM / 2) * pscale;
+      rgb([196, 180, 154], true);
+      circle(cx, cy, pBore, "f");
+      rgb([150, 150, 150], false);
+      ops.push("0.3 w");
+      circle(cx, cy, pBore, "S");
+      const centreOn = withFoot ? pack.filter(function (c) { return c.type !== "rebar"; }) : pack;
+      const mid = enclosingCenter(centreOn.length ? centreOn : pack);
+      if (withFoot) {
+        const loopOnly = pack.filter(function (c) { return c.type === "loop"; });
+        const footMid = enclosingCenter(loopOnly.length ? loopOnly : pack);
+        rgb([17, 17, 17], true);
+        stadium(cx + (footMid.x - mid.x) * pscale, cy + (footMid.y - mid.y) * pscale, r.footDia * pscale, r.footWid * pscale, "f");
+      }
+      pack.forEach(function (c) {
+        const px = cx + (c.x - mid.x) * pscale;
+        const py = cy + (c.y - mid.y) * pscale;
+        const pr = Math.max(c.r * pscale, 0.45);
+        if (c.type === "tremie") rgb([232, 87, 15], true);
+        else if (c.type === "rebar") rgb([120, 122, 125], true);
+        else rgb([180, 176, 170], true);
+        rgb([28, 29, 31], false);
+        ops.push("0.2 w");
+        circle(px, py, pr, "B");
+      });
       rgb(INK, true);
-      text(label, dx + 5.5, ly, 7.5, "F1");
-      ly += 4;
+      text(caption, dx, top + box + 3.2, 6.5, "F1");
     }
-    swatch([180, 176, 170], "Loop " + r.loopODmm + " mm x " + r.legs);
-    if (r.rebarOn) swatch([120, 122, 125], "Rebar 40 mm");
-    if (r.tremODmm > 0) swatch([232, 87, 15], "Tremie " + r.tremODmm + " mm");
-    swatch([196, 180, 154], "Bit size " + formatNum(r.boreDiaMM, 1) + " mm");
-    swatch([28, 29, 31], "U Bend " + formatNum(r.footDia, 1) + " x " + formatNum(r.footWid, 1) + " mm");
-    if (r.rebarOn) swatch([28, 29, 31], "Bundle " + formatNum(r.bundleDia, 0) + " mm");
+    packDrawing(r.circles, keyY0 - 1, true, "U Bend " + formatNum(r.footDia, 1) + " x " + formatNum(r.footWid, 1));
+    packDrawing(r.touchCircles, keyY0 - 1 + box + 5.2 + gap, false, "Bundle " + formatNum(r.bundleDia, 0) + " mm");
+    const ly = keyY0 - 1 + box + 5.2 + gap + box + 4;
 
     y = Math.max(ky, ly) + 6;
     heading("Testing parameters");
@@ -1764,13 +1777,34 @@ Time   = Volume / Pump flow</pre></div>
     y += 8;
     rgb(MUTED, true);
     text("Open these figures", LEFT, y, 8, "F1");
-    y += 4.2;
-    const linkTop = y - 2.6;
-    wrap(share, 178, 7).forEach(function (ln) {
-      text(ln, LEFT, y, 7, "F1");
-      y += 3.2;
+    y += 4.4;
+    const linkBlue = [16, 78, 158];
+    const linkW = 176;
+    const linkSize = 7;
+    // a url has no spaces, so break it by width. the click still opens the full address
+    const mmPerChar = linkSize * 0.52 * 25.4 / 72;
+    const maxChars = Math.max(24, Math.floor(linkW / mmPerChar));
+    const linkLines = [];
+    for (let i = 0; i < share.length; ) {
+      let end = Math.min(share.length, i + maxChars);
+      if (end < share.length) {
+        const slice = share.slice(i, end);
+        const br = Math.max(slice.lastIndexOf("&"), slice.lastIndexOf("/"), slice.lastIndexOf("?"));
+        if (br > maxChars * 0.45) end = i + br + 1;
+      }
+      linkLines.push(share.slice(i, end));
+      i = end;
+    }
+    const linkTop = y - 2.4;
+    linkLines.forEach(function (ln) {
+      rgb(linkBlue, true);
+      text(ln, LEFT, y, linkSize, "F1");
+      rgb(linkBlue, false);
+      ops.push("0.35 w");
+      line(LEFT, y + 0.7, LEFT + Math.min(linkW, ln.length * mmPerChar), y + 0.7);
+      y += 3.3;
     });
-    const linkRect = [n(X(LEFT - 1)), n(Y(y)), n(X(LEFT + 178)), n(Y(linkTop))].join(" ");
+    const linkRect = [n(X(LEFT - 0.5)), n(Y(y - 0.6)), n(X(LEFT + linkW)), n(Y(linkTop))].join(" ");
     const linkUri = share.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 
     const stream = ops.join("\n");
