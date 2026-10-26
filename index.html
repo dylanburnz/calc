@@ -1385,18 +1385,18 @@ Time   = Volume / Pump flow</pre></div>
     let title, body;
     const each = formatNum(r.eachSide, 0);
     const total = formatNum(r.clearance, 0);
-    const bundleBit = r.rebarOn ? "Bundle " + formatNum(r.bundleDia, 0) + " mm. " : "";
+    const wideName = r.bundleGoverns ? "Bundle" : "U Bend";
+    const wideMm = formatNum(r.bundleGoverns ? r.bundleDia : r.footDia, r.bundleGoverns ? 0 : 1);
+    const wideBit = wideName + " " + wideMm + " mm, ";
     if (r.clearanceStatus === "nofit") {
-      title = (r.bundleGoverns ? "Bundle" : "U Bend") + " does not fit";
-      body = r.bundleGoverns
-        ? "Bundle " + formatNum(r.bundleDia, 0) + " mm is wider than the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or use a smaller loop pipe."
-        : bundleBit + "It is wider than the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or use a smaller loop pipe.";
+      title = wideName + " does not fit";
+      body = wideName + " " + wideMm + " mm is wider than the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or use a smaller loop pipe.";
     } else if (r.clearanceStatus === "tight") {
       title = "Tight clearance";
-      body = bundleBit + "leaving only ≈" + total + " mm total (≈" + each + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
+      body = wideBit + "leaving only ≈" + total + " mm total (≈" + each + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
     } else {
       title = "Clearance looks workable";
-      body = bundleBit + "leaving ≈" + total + " mm total (≈" + each + " mm each side) against the borehole wall.";
+      body = wideBit + "leaving ≈" + total + " mm total (≈" + each + " mm each side) against the borehole wall.";
     }
     banner.innerHTML = "<b>" + title + "</b>" + body;
   }
