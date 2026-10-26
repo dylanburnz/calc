@@ -1397,6 +1397,7 @@ Time   = Volume / Pump flow</pre></div>
     if (r.rebarOn) legend += '<div><span class="sw" style="background:var(--muted)"></span>Rebar — 40 mm OD</div>';
     if (r.tremODmm > 0) legend += '<div><span class="sw" style="background:var(--accent)"></span>Tremie — ' + r.tremODmm + " mm OD</div>";
     legend += '<div><span class="sw" style="border:1px dashed var(--line);background:transparent"></span>Borehole — ' + formatNum(r.boreDiaMM, 1) + " mm</div>";
+    legend += '<div><span class="sw" style="background:#111;border-radius:999px"></span>U Bend — ' + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm</div>";
     document.getElementById("legend").innerHTML = legend;
 
     const banner = document.getElementById("clearance");
