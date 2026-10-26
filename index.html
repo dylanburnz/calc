@@ -773,7 +773,8 @@ Wall area  = Outer area − Inner area</pre></div>
   Widest  = 2 × OD + 4 × t
   Narrowest = Widest / 2
   50 mm: t = 4.55 mm → 118.2 × 59.1 mm
-Clearance = Borehole diameter − U Bend widest</pre></div>
+Clearance = Borehole diameter − U Bend widest
+If the bundle of pipes is wider than the U Bend, clearance uses the bundle instead.</pre></div>
       <div class="formula"><h3>Loop force balance (closed, pre-filled)</h3><pre>Mud density (kg/m³) = Target mud weight (g/cm³) × 1000
 Rest water level is the depth from surface to standing water. 0 m = the hole is full.
 Dry length = min(Rest water level, Design depth)
@@ -973,13 +974,14 @@ Time   = Volume / Pump flow</pre></div>
       tremMid = [0, -half]; tremDir = [0, -1]; halfDist = half;
     }
     const circles = positions.map(([x, y]) => ({ x, y, r, type: "loop" }));
-    function nestedPosition(newR) {
-      // tuck the tremie (or the rebar) up against the pair so it isn't floating in the middle
-      const d = r + newR, dy = Math.sqrt(Math.max(d * d - halfDist * halfDist, 0));
-      return [tremMid[0] + tremDir[0] * dy, tremMid[1] + tremDir[1] * dy];
+    function nestedPosition(newR, dir) {
+      // sit the pipe against the pair. tremie goes one way, rebar the other so it can run full depth
+      const d = r + newR, along = Math.sqrt(Math.max(d * d - halfDist * halfDist, 0));
+      const use = dir || tremDir;
+      return [tremMid[0] + use[0] * along, tremMid[1] + use[1] * along];
     }
     if (rebarOn) {
-      const pos = nestedPosition(20);
+      const pos = nestedPosition(20, [-tremDir[0], -tremDir[1]]);
       circles.push({ x: pos[0], y: pos[1], r: 20, type: "rebar" });
     }
     if (tremODmm > 0) {
@@ -999,6 +1001,12 @@ Time   = Volume / Pump flow</pre></div>
       if (R(m1) < R(m2)) hi = m2; else lo = m1;
     }
     return { x: 0, y: (lo + hi) / 2 };
+  }
+  function bundleDiameter(circles) {
+    // smallest circle around the pipes. only used when it is wider than the U Bend
+    if (!circles.length) return 0;
+    const k = enclosingCenter(circles).y;
+    return 2 * Math.max(...circles.map((c) => Math.sqrt(c.x * c.x + (c.y - k) * (c.y - k)) + c.r));
   }
   function uBend(loopODmm, sdr) {
     // cross section of the U Bend. wide = 2*od + 4*wall, narrow is half. 50mm sdr11 = 118.2
@@ -1151,8 +1159,10 @@ Time   = Volume / Pump flow</pre></div>
     const ubend = uBend(raw.loopOD, sdr);
     const footDia = ubend.len;
     const footWid = ubend.wid;
-    // clearance is borehole minus the U Bend. the wide side is the largest part
-    const governingDia = footDia;
+    const bundleDia = bundleDiameter(circles);
+    // U Bend is usually the widest. the bundle only takes over when the pipes stick out past it
+    const bundleGoverns = bundleDia > footDia;
+    const governingDia = bundleGoverns ? bundleDia : footDia;
     const clearance = boreDiaMM - governingDia;
     const clearanceStatus = clearance > 20 ? "ok" : clearance > 0 ? "tight" : "nofit";
     const footLoadKg = mgsFootLoadKg(raw.loopOD, legs);
@@ -1170,7 +1180,7 @@ Time   = Volume / Pump flow</pre></div>
       fillWaterHole, fillWaterSite,
       mudFlushHole, mudFlushSite,
       groutOrder: mix.groutOrder,
-      circles, footDia, footWid, governingDia, clearance, eachSide: clearance / 2, clearanceStatus,
+      circles, footDia, footWid, bundleDia, bundleGoverns, governingDia, clearance, eachSide: clearance / 2, clearanceStatus,
       footLoadKg, footOverload,
       testMinLpm: test.minLpm, testLpm: test.lpm, testDp: test.dp, testLo: test.lo, testHi: test.hi, testBore: test.boreMm, testPath: test.pathM, testCirc: test.circSec
     };
@@ -1366,6 +1376,7 @@ Time   = Volume / Pump flow</pre></div>
     if (r.tremODmm > 0) legend += '<div><span class="sw" style="background:var(--accent)"></span>Tremie — ' + r.tremODmm + " mm OD</div>";
     legend += '<div><span class="sw" style="border:1px dashed var(--line);background:transparent"></span>Borehole — ' + formatNum(r.boreDiaMM, 1) + " mm</div>";
     legend += '<div><span class="sw" style="background:#111;border-radius:999px"></span>U Bend — ' + formatNum(r.footDia, 1) + " × " + formatNum(r.footWid, 1) + " mm</div>";
+    if (r.rebarOn) legend += '<div><span class="sw" style="border:1.5px solid var(--ink);border-radius:999px;background:transparent"></span>Bundle — ' + formatNum(r.bundleDia, 0) + " mm</div>";
     document.getElementById("legend").innerHTML = legend;
 
     const banner = document.getElementById("clearance");
@@ -1374,15 +1385,18 @@ Time   = Volume / Pump flow</pre></div>
     let title, body;
     const each = formatNum(r.eachSide, 0);
     const total = formatNum(r.clearance, 0);
+    const bundleBit = r.rebarOn ? "Bundle " + formatNum(r.bundleDia, 0) + " mm. " : "";
     if (r.clearanceStatus === "nofit") {
-      title = "U Bend does not fit";
-      body = "It is wider than the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or use a smaller loop pipe.";
+      title = (r.bundleGoverns ? "Bundle" : "U Bend") + " does not fit";
+      body = r.bundleGoverns
+        ? "Bundle " + formatNum(r.bundleDia, 0) + " mm is wider than the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or use a smaller loop pipe."
+        : bundleBit + "It is wider than the borehole (" + formatNum(r.boreDiaMM, 0) + " mm). Increase the borehole diameter or use a smaller loop pipe.";
     } else if (r.clearanceStatus === "tight") {
       title = "Tight clearance";
-      body = "leaving only ≈" + total + " mm total (≈" + each + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
+      body = bundleBit + "leaving only ≈" + total + " mm total (≈" + each + " mm each side). Risk of jamming against the borehole wall — consider a larger borehole diameter.";
     } else {
       title = "Clearance looks workable";
-      body = "leaving ≈" + total + " mm total (≈" + each + " mm each side) against the borehole wall.";
+      body = bundleBit + "leaving ≈" + total + " mm total (≈" + each + " mm each side) against the borehole wall.";
     }
     banner.innerHTML = "<b>" + title + "</b>" + body;
   }
@@ -1701,6 +1715,7 @@ Time   = Volume / Pump flow</pre></div>
     if (r.tremODmm > 0) swatch([232, 87, 15], "Tremie " + r.tremODmm + " mm");
     swatch([196, 180, 154], "Bit size " + formatNum(r.boreDiaMM, 1) + " mm");
     swatch([28, 29, 31], "U Bend " + formatNum(r.footDia, 1) + " x " + formatNum(r.footWid, 1) + " mm");
+    if (r.rebarOn) swatch([28, 29, 31], "Bundle " + formatNum(r.bundleDia, 0) + " mm");
 
     y = Math.max(ky, ly) + 6;
     heading("Testing parameters");
