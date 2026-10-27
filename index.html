@@ -326,16 +326,6 @@ table.spaced td { border-bottom: 0; }
 .guide p { margin: .3rem 0; }
 .guide ul, .guide ol { margin: .2rem 0 .45rem; padding-left: 1.15rem; }
 .guide li { margin: .28rem 0; }
-.guide .scroll { overflow-x: auto; margin: .35rem 0 .5rem; }
-.guide table { font-size: .75rem; min-width: 28rem; }
-.guide th, .guide td { padding: .35rem .45rem; white-space: nowrap; text-align: left; }
-.guide table.bleed { min-width: 0; width: 100%; table-layout: fixed; }
-.guide table.bleed th:nth-child(1),
-.guide table.bleed td:nth-child(1) { width: 40%; white-space: normal; }
-.guide table.bleed th:nth-child(2),
-.guide table.bleed td:nth-child(2) { width: 30%; text-align: center; }
-.guide table.bleed th:nth-child(3),
-.guide table.bleed td:nth-child(3) { width: 30%; text-align: right; }
 .method { margin-top: 0; }
 .method summary { display: flex; align-items: center; gap: .6rem; cursor: pointer; list-style: none; }
 .method summary::-webkit-details-marker { display: none; }
@@ -641,7 +631,7 @@ table.spaced td { border-bottom: 0; }
     <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19a8 8 0 1 1 14 0"/><circle cx="12" cy="13" r="1.6" fill="currentColor" stroke="none"/><path d="M12 13 16.2 9"/></svg></span>Testing parameters</h2>
     <table class="spaced">
       <tbody>
-        <tr class="key-row last"><td>Minimum flow rate = 0.6 m/s</td><td id="t-flow"></td></tr>
+        <tr class="key-row last"><td>Minimum flow rate = 0.61 m/s</td><td id="t-flow"></td></tr>
       </tbody>
     </table>
     <div class="field" style="margin-top:.35rem">
@@ -660,79 +650,55 @@ table.spaced td { border-bottom: 0; }
     <p class="hint" id="t-note"></p>
     <p class="step-h">Purge / flow test</p>
     <ol class="steps">
-      <li>Clean mains water only. Set pump flow to match actual pump flow listed above (adjustable if needed).</li>
-      <li>Run until the sight glass is a solid clear stream, then at least 20 minutes or a 100–200 µm filter bag stays empty for 10 minutes.</li>
-      <li>At a steady flow, the gauge difference(friction loss) across the loop must be within the pass window above. High means air or a blockage/kink. Low means a bypass.</li>
+      <li>Clean mains water only. Set the pump to the actual pump flow above. It must be at least 0.61 m/s.</li>
+      <li>Run until the sight glass is free of debris and air, then keep that flow for at least 15 minutes.</li>
+      <li>Flow test both ways. At a steady flow, the gauge difference (friction loss) must sit in the pass window above. High means air or a blockage/kink. Low means a bypass.</li>
     </ol>
     <p class="step-h">Pressure test</p>
     <ol class="steps">
-      <li>Rest the isolated loop at 0 bar for 60 minutes.</li>
-      <li>Bring it to 6.0 bar in under 10 minutes. Hold 6.0 bar for 30 minutes, topping up as the pipe expands.</li>
-      <li>Isolate the pump. After 60 minutes (P60) the gauge must still read at least 4.2 bar.</li>
-      <li>Bleed quickly by 10–15% (a 5.0 bar P60 goes to 4.3 bar) and shut the valve. Over the next 30 minutes the needle must rise or stay still to pass. If it falls, there is a leak — drop to 0 bar and wait 8 hours before another test.</li>
+      <li>Flush the air out, then leave the loop idle for 1 hour with no pressure on the pipe.</li>
+      <li>Raise it to 7.5 bar. Hold 7.5 bar for 10 minutes, topping up as the pipe expands.</li>
+      <li>Isolate. Over the next hour the gauge must not fall below 6.3 bar.</li>
+      <li>Drop quickly by 0.75 bar and shut the valve. Read the gauge at 10, 20 and 30 minutes. Pass if the 30-minute reading is no more than 0.3 bar below the 10-minute reading. If it fails, run the test again.</li>
     </ol>
     <details class="more guide-drop">
       <summary>Full guide <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
       <div class="guide">
         <h3>Quick reference</h3>
         <ul>
-          <li><b>Test pressure (STP):</b> 6.0 bar. That is 1.5 × the design operating pressure, and never below 6.0 bar. Check the job spec if it asks for more.</li>
-          <li><b>Stand:</b> 60 minutes isolated at 0 bar, so the pipe can relax.</li>
-          <li><b>Pressurise:</b> 0 to 6.0 bar in under 10 minutes, without stopping.</li>
-          <li><b>Expansion hold:</b> 30 minutes pinned on 6.0 bar. Top up in small spurts as the pipe expands.</li>
-          <li><b>Decay:</b> pump isolated. After 60 minutes record P60. It must still be at least 4.2 bar.</li>
-          <li><b>Bleed:</b> drop 10–15%, fast, to the PAB on the chart. Then shut the valve.</li>
-          <li><b>Rebound:</b> leave it isolated for 30 minutes and record the final pressure (FRP). It should climb a little or stay still.</li>
+          <li><b>Flush velocity:</b> at least 0.61 m/s, both directions. Higher if the loop is still throwing debris.</li>
+          <li><b>Flush time:</b> once the sight glass is free of debris and air, hold that flow for at least 15 minutes.</li>
+          <li><b>Flow pass:</b> the gauge difference must sit in the calculated pass window. Test the return direction as well.</li>
+          <li><b>Test pressure:</b> 7.5 bar. Water only, never air.</li>
+          <li><b>Idle:</b> 1 hour with no pressure, after the air is out.</li>
+          <li><b>Hold:</b> 10 minutes on 7.5 bar. Top up as the pipe expands.</li>
+          <li><b>Decay:</b> isolated for 1 hour. Stop if the gauge falls below 6.3 bar.</li>
+          <li><b>Drop:</b> 0.75 bar, quick, then shut the valve.</li>
+          <li><b>Readings:</b> A at 10 minutes, B at 20, C at 30. Pass if C is no more than 0.3 bar below A.</li>
         </ul>
         <h3>Procedure</h3>
         <ol>
-          <li><b>De-air.</b> Flush with clean water until the discharge is clear of bubbles. Isolate and rest at 0 bar for at least 60 minutes.</li>
-          <li><b>Expansion.</b> Bring the loop to 6.0 bar in under 10 minutes. Hold 6.0 bar for 30 minutes. The needle will fall as the pipe stretches — pump small top-ups so it stays on 6.0 bar the whole time.</li>
-          <li><b>Decay.</b> Isolate the pump and start 60 minutes. P60 is the gauge at the end. If it is under 4.2 bar (70% of 6.0), stop. That is trapped air or a leak.</li>
-          <li><b>Bleed and rebound.</b> Find P60 on the chart. Bleed quickly to that PAB and shut the valve at once. Leave it isolated for 30 minutes and watch the needle.</li>
+          <li><b>Flush and purge.</b> Clean mains water, at least 0.61 m/s, until the sight glass shows no debris and no air. Then hold that flow for at least 15 minutes. Prove the flow both ways.</li>
+          <li><b>Idle.</b> Leave the loop for 1 hour with no pressure on the pipe.</li>
+          <li><b>Pressurise.</b> Bring it to 7.5 bar. For the next 10 minutes, pump it back up whenever the pipe expands and the needle falls.</li>
+          <li><b>Decay.</b> Isolate and start 1 hour. If the gauge falls below 6.3 bar, stop. That is trapped air or a leak.</li>
+          <li><b>Drop.</b> Bleed 0.75 bar quickly and shut the valve at once.</li>
+          <li><b>Three readings.</b> A at 10 minutes, B at 20, C at 30. Pass only if C − A is 0.3 bar or less. Anything outside that is a fail. Repeat the whole test.</li>
         </ol>
-        <h3>Bleed chart</h3>
-        <p>Find P60, bleed to the PAB next to it. Figures are the nearest 0.1 bar inside a 10–15% drop.</p>
-        <div class="scroll">
-          <table class="bleed">
-            <thead><tr><th>P60</th><th>PAB</th><th>Drop</th></tr></thead>
-            <tbody>
-              <tr><td>4.2 bar (minimum pass)</td><td>3.6 bar</td><td>14.3%</td></tr>
-              <tr><td>4.3 bar</td><td>3.7 bar</td><td>14.0%</td></tr>
-              <tr><td>4.4 bar</td><td>3.8 bar</td><td>13.6%</td></tr>
-              <tr><td>4.5 bar</td><td>3.9 bar</td><td>13.3%</td></tr>
-              <tr><td>4.6 bar</td><td>4.0 bar</td><td>13.0%</td></tr>
-              <tr><td>4.7 bar</td><td>4.0 bar</td><td>14.9%</td></tr>
-              <tr><td>4.8 bar</td><td>4.1 bar</td><td>14.6%</td></tr>
-              <tr><td>4.9 bar</td><td>4.2 bar</td><td>14.3%</td></tr>
-              <tr><td>5.0 bar</td><td>4.3 bar</td><td>14.0%</td></tr>
-              <tr><td>5.1 bar</td><td>4.4 bar</td><td>13.7%</td></tr>
-              <tr><td>5.2 bar</td><td>4.5 bar</td><td>13.5%</td></tr>
-              <tr><td>5.3 bar</td><td>4.6 bar</td><td>13.2%</td></tr>
-              <tr><td>5.4 bar</td><td>4.6 bar</td><td>14.8%</td></tr>
-              <tr><td>5.5 bar</td><td>4.7 bar</td><td>14.5%</td></tr>
-              <tr><td>5.6 bar</td><td>4.8 bar</td><td>14.3%</td></tr>
-              <tr><td>5.7 bar</td><td>4.9 bar</td><td>14.0%</td></tr>
-              <tr><td>5.8 bar</td><td>5.0 bar</td><td>13.8%</td></tr>
-              <tr><td>5.9 bar</td><td>5.1 bar</td><td>13.6%</td></tr>
-              <tr><td>6.0 bar</td><td>5.1 bar</td><td>15.0%</td></tr>
-            </tbody>
-          </table>
-        </div>
         <h3>Pass, fail, and retest</h3>
         <ul>
-          <li><b>Pass:</b> over the last 30 minutes the pressure rises or stays flat.</li>
-          <li><b>Fail:</b> the pressure keeps falling. That is a leak in the loop, a manifold joint, or a fitting.</li>
-          <li><b>If it fails:</b> drop the loop back to 0 bar. Leave it at least 8 hours before testing again.</li>
+          <li><b>Pass:</b> after the sudden drop, the 30-minute reading is no more than 0.3 bar below the 10-minute reading.</li>
+          <li><b>Fail:</b> the gauge falls below 6.3 bar during the hour, or C is more than 0.3 bar below A. That is air still in the pipe, or a leak.</li>
+          <li><b>If it fails:</b> the standard says run the test again.</li>
         </ul>
         <h3>Glossary</h3>
         <ul>
-          <li><b>STP</b> — system test pressure. The 6.0 bar you pump up to and hold.</li>
-          <li><b>P60</b> — the gauge reading after the 60 minutes decay period.</li>
-          <li><b>PAB</b> — pressure after bleeding. The figure you drop to, from the chart.</li>
-          <li><b>FRP</b> — final rebound pressure, read 30 minutes after the bleed.</li>
+          <li><b>STP</b> — system test pressure. 7.5 bar on this sheet.</li>
+          <li><b>A</b> — the gauge reading 10 minutes after the sudden drop.</li>
+          <li><b>B</b> — the gauge reading 20 minutes after the drop.</li>
+          <li><b>C</b> — the gauge reading 30 minutes after the drop. Pass if C is within 0.3 bar of A.</li>
         </ul>
-        <p class="hint">GSHPA Vertical Borehole Standard section 10, using the creep and rebound method in BS EN 805 and the WRc guidance.</p>
+        <p class="hint">HPA UK Closed Loop Vertical Borehole Standard VBS V5:2026, section 14. Flush at 0.61 m/s, then the rebound method in clause 14.6.</p>
       </div>
     </details>
   </section>
@@ -834,12 +800,12 @@ Mud flush = Estimate per hole × Number of boreholes
 Total water = Loop fill + Grout mix water + Mud flush   (site totals, litres)</pre></div>
       <div class="formula wide"><h3>Purge / flow test</h3><pre>Bore = OD − 2 × (OD / 11)
 Area = π/4 × Bore²
-Min flow = 0.6 m/s × Area
+Min flow = 0.61 m/s × Area
 
-32 mm   bore 26.18 mm   19.4 L/min
-40 mm   bore 32.73 mm   30.3 L/min
-45 mm   bore 36.82 mm   38.3 L/min
-50 mm   bore 40.91 mm   47.3 L/min
+32 mm   bore 26.18 mm   19.7 L/min
+40 mm   bore 32.73 mm   30.8 L/min
+45 mm   bore 36.82 mm   39.0 L/min
+50 mm   bore 40.91 mm   48.1 L/min
 
 Pump flow starts at the next 5 L/min above that minimum.
 Friction loss uses the pump flow you set, not the minimum.</pre></div>
@@ -903,7 +869,7 @@ Time   = Volume / Pump flow</pre></div>
 <script>
 /* all the working. pipe is SDR 11, fixed.
    pipeGeom / bundleCircles / uBend  - sizes and the plan
-   loopTest                               - 0.6 m/s flow and the darcy friction loss
+   loopTest                               - 0.61 m/s flow and the darcy friction loss
    compute                                - weight, overdrill, grout, casing void, water
    render                                 - tables, warning, drawing, test figures
    buildPdfBlob                           - job sheet plus the testing parameters
@@ -911,6 +877,7 @@ Time   = Volume / Pump flow</pre></div>
 */
 (function () {
   const SDR = 11;
+  const MIN_VEL = 0.61; // HPA UK VBS V5, clause 14.2. minimum flush velocity, m/s
   // densities, kg/m3. hdpe is near enough for the pipe weight
   const STEEL_DENS = 7850, HDPE_DENS = 950, WATER_DENS = 1000;
   // what the U Bend will carry, kg. modular weights only - rebar is taped on, not hung off the U Bend
@@ -954,11 +921,11 @@ Time   = Volume / Pump flow</pre></div>
     return rho * g * hf / 1e5;
   }
   function loopTest(odMm, sdr, depth, pumpLpm) {
-    // minimum is 0.6 m/s. the pump box can sit higher, and the friction loss follows that
+    // minimum is 0.61 m/s. the pump box can sit higher, and the friction loss follows that
     const boreMm = odMm - 2 * (odMm / sdr);
     const D = boreMm / 1000;
     const area = (Math.PI / 4) * D * D;
-    const minLpm = 0.6 * area * 60000;
+    const minLpm = MIN_VEL * area * 60000;
     let lpm = Number(pumpLpm);
     if (!Number.isFinite(lpm) || lpm < minLpm) lpm = Math.ceil((minLpm - 1e-6) / 5) * 5;
     const v = (lpm / 60000) / area;
@@ -1003,8 +970,20 @@ Time   = Volume / Pump flow</pre></div>
     }
     return circles;
   }
+  function bundleMid(circles) {
+    // centre of the pipe areas, so a small tremie does not shove the loops low
+    let area = 0, sx = 0, sy = 0;
+    circles.forEach(function (c) {
+      const a = c.r * c.r;
+      area += a;
+      sx += c.x * a;
+      sy += c.y * a;
+    });
+    if (!area) return { x: 0, y: 0 };
+    return { x: sx / area, y: sy / area };
+  }
   function enclosingCenter(circles) {
-    // centre of the pipes, so the drawing sits in the middle of the hole
+    // centre of the smallest circle around the pipes. used for the bundle measurement, not the drawing
     if (!circles.length) return { x: 0, y: 0 };
     let lo = Math.min(...circles.map((c) => c.y - c.r)) - 1;
     let hi = Math.max(...circles.map((c) => c.y + c.r)) + 1;
@@ -1315,7 +1294,7 @@ Time   = Volume / Pump flow</pre></div>
     document.getElementById("pumpTickMin").textContent = String(slideMin);
     document.getElementById("t-note").textContent =
       r.loopODmm + " mm SDR 11, bore " + formatNum(r.testBore, 1) + " mm. Flow path " + formatNum(r.testPath, 0) +
-      " m, down and back. Friction loss is at the pump flow, which starts on the next 5 L/min above 0.6 m/s.";
+      " m, down and back. Friction loss is at the pump flow, which starts on the next 5 L/min above 0.61 m/s.";
     const sdrLabel = "11";
     const cfg = r.legs === 4 ? "double" : "single";
     const holes = r.holes;
@@ -1367,17 +1346,12 @@ Time   = Volume / Pump flow</pre></div>
 
     const size = 220, pcx = 110, pcy = 110, margin = 16, scale = (size - margin * 2) / r.boreDiaMM, boreR = (r.boreDiaMM / 2) * scale;
     function paint(el, pack, withFoot) {
-      const centreOn = withFoot
-        ? pack.filter(function (c) { return c.type !== "rebar"; })
-        : pack;
-      const mid = enclosingCenter(centreOn.length ? centreOn : pack);
+      const mid = bundleMid(pack);
       let html = '<circle cx="' + pcx + '" cy="' + pcy + '" r="' + boreR + '" fill="var(--mud)" opacity="0.28"/>';
       html += '<circle cx="' + pcx + '" cy="' + pcy + '" r="' + boreR + '" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 3"/>';
       if (withFoot) {
-        const loopOnly = pack.filter(function (c) { return c.type === "loop"; });
-        const footMid = enclosingCenter(loopOnly.length ? loopOnly : pack);
-        const fx = pcx + (footMid.x - mid.x) * scale;
-        const fy = pcy + (footMid.y - mid.y) * scale;
+        const fx = pcx - mid.x * scale;
+        const fy = pcy - mid.y * scale;
         html += '<path d="' + stadiumPath(fx, fy, r.footDia * scale, r.footWid * scale) + '" fill="#111" stroke="#111" stroke-width="0.6"/>';
       }
       pack.forEach(function (c) {
@@ -1427,10 +1401,10 @@ Time   = Volume / Pump flow</pre></div>
 
   let pumpOd = null;
   function tunePump(od) {
-    // new pipe size picks a fresh default, unless you've already set a flow that still clears 0.6 m/s
+    // new pipe size picks a fresh default, unless you've already set a flow that still clears 0.61 m/s
     const pump = document.getElementById("pumpFlow");
     const D = (od - 2 * (od / SDR)) / 1000;
-    const minLpm = 0.6 * (Math.PI / 4) * D * D * 60000;
+    const minLpm = MIN_VEL * (Math.PI / 4) * D * D * 60000;
     const def = Math.ceil((minLpm - 1e-6) / 5) * 5;
     pump.dataset.minlpm = String(minLpm);
     if (pumpOd !== od) {
@@ -1705,13 +1679,10 @@ Time   = Volume / Pump flow</pre></div>
       rgb([150, 150, 150], false);
       ops.push("0.3 w");
       circle(cx, cy, pBore, "S");
-      const centreOn = withFoot ? pack.filter(function (c) { return c.type !== "rebar"; }) : pack;
-      const mid = enclosingCenter(centreOn.length ? centreOn : pack);
+      const mid = bundleMid(pack);
       if (withFoot) {
-        const loopOnly = pack.filter(function (c) { return c.type === "loop"; });
-        const footMid = enclosingCenter(loopOnly.length ? loopOnly : pack);
         rgb([17, 17, 17], true);
-        stadium(cx + (footMid.x - mid.x) * pscale, cy + (footMid.y - mid.y) * pscale, r.footDia * pscale, r.footWid * pscale, "f");
+        stadium(cx - mid.x * pscale, cy - mid.y * pscale, r.footDia * pscale, r.footWid * pscale, "f");
       }
       pack.forEach(function (c) {
         const px = cx + (c.x - mid.x) * pscale;
@@ -1734,7 +1705,7 @@ Time   = Volume / Pump flow</pre></div>
     y = Math.max(ky, ly) + 6;
     heading("Testing parameters");
     [
-      ["Minimum flow rate = 0.6 m/s", formatNum(r.testMinLpm, 1) + " L/min", true],
+      ["Minimum flow rate = 0.61 m/s", formatNum(r.testMinLpm, 1) + " L/min", true],
       ["Actual pump flow", formatNum(r.testLpm, 1) + " L/min", true],
       ["Calculated friction loss", formatNum(r.testDp, 2) + " bar\n" + formatNum(r.testDp * 100, 0) + " kPa", true],
       ["Pass window", formatNum(r.testLo, 2) + " - " + formatNum(r.testHi, 2) + " bar\n" + formatNum(r.testLo * 100, 0) + " - " + formatNum(r.testHi * 100, 0) + " kPa", true],
@@ -1748,9 +1719,9 @@ Time   = Volume / Pump flow</pre></div>
         y += 3.6;
       });
     }
-    para("Purge / flow test. Clean mains water only. Set the pump to the actual pump flow listed above (adjustable if needed), until the sight glass is a solid clear stream. Then at least 20 minutes, or a 100-200 um filter bag stays empty for 10 minutes. At a steady flow, the gauge difference(friction loss) across the loop must be within the pass window. High means air or a blockage/kink. Low means a bypass.");
+    para("Purge / flow test. Clean mains water. At least 0.61 m/s. Once the sight glass is free of debris and air, hold that flow for 15 minutes. Test both directions. The gauge difference must sit in the pass window. High means air or a blockage/kink. Low means a bypass.");
     y += 1.2;
-    para("Pressure test. Rest at 0 bar for 60 min. Raise to 6.0 bar in under 10 min and hold for 30 min. Isolate. After 60 min, P60 must be at least 4.2 bar. Bleed 10-15% (5.0 bar goes to 4.3) and isolate for 30 min. Pass if the needle rises or stays still.");
+    para("Pressure test. Idle 1 hour with no pressure. Raise to 7.5 bar and hold for 10 minutes. Isolate for 1 hour: stay at or above 6.3 bar. Drop 0.75 bar, quickly. Pass if the 30-minute reading is no more than 0.3 bar below the 10-minute reading.");
     y += 6;
     heading("Materials list");
     const mat = [
